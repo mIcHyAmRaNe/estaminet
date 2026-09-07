@@ -29,6 +29,10 @@ export const BREDOUILLE_MS = 2400;
 // i18n module share a single constant instead of a hardcoded string.
 export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
+// App version fallback for the About dialog (runtime source of truth is
+// getVersion() from @tauri-apps/api/app; keep in sync with package.json).
+export const APP_VERSION = "0.2.0";
+
 // Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";
 export const RECENTS_MAX = 5;

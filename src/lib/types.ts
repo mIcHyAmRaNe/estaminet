@@ -37,7 +37,7 @@ export interface LoginFieldsProps {
   loading: boolean;
 }
 
-// Step 1 — saved accounts: preselect (radio) then Connect, ✕ per row.
+// Step 1 — saved accounts: preselect (radio) then Connect, remove per row.
 export interface AccountPickerProps {
   accounts: string[];
   pickedAccount: string | null;

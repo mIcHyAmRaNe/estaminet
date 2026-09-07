@@ -1128,3 +1128,90 @@ label.tavern-filter-option {
     cursor: not-allowed;
   }
 }
+
+/* ── Auth head actions (About + language, step 1) ── */
+.auth-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Inline Fluent icons inside text buttons (Enter/Back/Connect/Close):
+   keep the glyph glued to the label without restructuring the buttons. */
+.btn-primary svg,
+.btn-secondary svg {
+  vertical-align: -3px;
+  margin-right: 6px;
+}
+
+/* ── About dialog ── */
+.about-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-solid);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+  }
+}
+
+.about-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  animation: tavern-filter-in 0.14s var(--ease-standard);
+  cursor: pointer;
+}
+
+.about-panel {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: clamp(20px, 3vw, 28px);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  cursor: default;
+}
+
+.about-title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+}
+
+.about-version {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.about-description {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.about-tech {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}

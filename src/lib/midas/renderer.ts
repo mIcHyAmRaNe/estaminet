@@ -1,5 +1,5 @@
 // RK Midas character renderer, ported to a self-contained ES module.
-// Vendored from Renaissance Kingdoms' midas.js (via rk_chat's port) and
+// Vendored from RK's midas.js (via rk_chat's port) and
 // adjusted for Estaminet:
 // - CDN root points at the oxv CDN directly (lesroyaumes.cdn.oxv.fr serves
 //   Access-Control-Allow-Origin: *). renaissancekingdoms.com 302-redirects

@@ -26,6 +26,10 @@ import translateSvg from "../../assets/icons/fluent/ic_fluent_translate_24_regul
 import localLanguageSvg from "../../assets/icons/fluent/ic_fluent_local_language_24_regular.svg?raw";
 import checkboxCheckedSvg from "../../assets/icons/fluent/ic_fluent_checkbox_checked_24_regular.svg?raw";
 import checkboxUncheckedSvg from "../../assets/icons/fluent/ic_fluent_checkbox_unchecked_24_regular.svg?raw";
+import infoSvg from "../../assets/icons/fluent/ic_fluent_info_24_regular.svg?raw";
+import arrowLeftSvg from "../../assets/icons/fluent/ic_fluent_arrow_left_24_regular.svg?raw";
+import arrowEnterLeftSvg from "../../assets/icons/fluent/ic_fluent_arrow_enter_left_24_regular.svg?raw";
+import personSvg from "../../assets/icons/fluent/ic_fluent_person_24_regular.svg?raw";
 
 type IconProps = {
   size?: number;
@@ -73,3 +77,7 @@ export const Translate = makeFluentIcon(translateSvg);
 export const LocalLanguage = makeFluentIcon(localLanguageSvg);
 export const CheckboxChecked = makeFluentIcon(checkboxCheckedSvg);
 export const CheckboxUnchecked = makeFluentIcon(checkboxUncheckedSvg);
+export const Info = makeFluentIcon(infoSvg);
+export const ArrowLeft = makeFluentIcon(arrowLeftSvg);
+export const ArrowEnterLeft = makeFluentIcon(arrowEnterLeftSvg);
+export const Person = makeFluentIcon(personSvg);

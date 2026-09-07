@@ -1,8 +1,9 @@
+import { Dismiss } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
 import type { AccountPickerProps } from "../../lib/types";
 
 // Saved accounts: radio list, preselect-then-Connect.
-// The Connect button lives in AuthStep; here: selection + ✕ + toggle.
+// The Connect button lives in AuthStep; here: selection + remove + toggle.
 export default function AccountPicker(props: AccountPickerProps) {
   if (props.accounts.length === 0) return null;
 
@@ -52,7 +53,7 @@ export default function AccountPicker(props: AccountPickerProps) {
                 title={t("auth.removeAccount", { username: login })}
                 aria-label={t("auth.removeAccount", { username: login })}
               >
-                ✕
+                <Dismiss size={14} />
               </button>
             </div>
           );

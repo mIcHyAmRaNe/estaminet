@@ -1,6 +1,7 @@
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import TavernCarousel from "./TavernCarousel";
 import RecentTaverns from "./RecentTaverns";
+import { ArrowEnterLeft, ArrowLeft } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
 import type { TavernSelectProps } from "../../lib/types";
 
@@ -45,6 +46,7 @@ export default function TavernSelect(props: TavernSelectProps) {
           onClick={props.onEnter}
           disabled={props.loading || props.taverns.length === 0}
         >
+          {!props.loading && <ArrowEnterLeft size={16} />}
           {props.loading ? t("auth.submit") : t("auth.enterTavern")}
         </button>
 
@@ -55,6 +57,7 @@ export default function TavernSelect(props: TavernSelectProps) {
             onClick={props.onBack}
             disabled={props.loading}
           >
+            <ArrowLeft size={16} />
             {t("auth.backToAccounts")}
           </button>
           {props.onForgetCurrent && (

@@ -177,6 +177,15 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
     }
   }, [filtered, centerIndex, selectedId, onSelect]);
 
+  // External selection (recent chip): recenter on the newly selected
+  // tavern. Without this, centerIndex stays on the old card: the label
+  // moves but the carousel view does not, and arrows/side-cards keep
+  // navigating from the stale center. No onSelect here (no loop).
+  useEffect(() => {
+    const idx = filtered.findIndex((tav) => tav.id === selectedId);
+    if (idx >= 0 && idx !== centerIndex) setCenterIndex(idx);
+  }, [filtered, selectedId, centerIndex]);
+
   const selectAt = useCallback(
     (index: number) => {
       const tav = filtered[index];
@@ -348,7 +357,10 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
     ];
   }, [filtered, centerIndex]);
 
-  const selectedTavern = filtered[centerIndex] ?? taverns.find((tav) => tav.id === selectedId);
+  // Single source of truth: App's idLieu (selectedId). The centered card
+  // follows it via the sync effect above; the label reads it directly so
+  // a recent click updates the label even before the recenter lands.
+  const selectedTavern = taverns.find((tav) => tav.id === selectedId) ?? filtered[centerIndex];
 
   return (
     <div class="field tavern-carousel">

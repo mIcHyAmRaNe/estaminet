@@ -1,6 +1,9 @@
+import { useState } from "preact/hooks";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
+import AboutDialog from "../ui/AboutDialog";
 import LoginForm from "./LoginForm";
 import AccountPicker from "./AccountPicker";
+import { ArrowLeft, Info, Person } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
 import type { AuthStepProps } from "../../lib/types";
 
@@ -10,6 +13,7 @@ import type { AuthStepProps } from "../../lib/types";
 export default function AuthStep(props: AuthStepProps) {
   const showForm = props.useAnother || props.accounts.length === 0;
   const canConnectSaved = !showForm && props.pickedAccount !== null;
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   return (
     <div class="auth-container">
@@ -27,7 +31,18 @@ export default function AuthStep(props: AuthStepProps) {
         <div class="auth-head">
           <div class="auth-head-row">
             <h1>{t("auth.login")}</h1>
-            <LanguageSwitcher />
+            <div class="auth-head-actions">
+              <button
+                type="button"
+                class="about-btn"
+                onClick={() => setAboutOpen(true)}
+                title={t("about.title")}
+                aria-label={t("about.title")}
+              >
+                <Info size={18} />
+              </button>
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
 
@@ -54,10 +69,12 @@ export default function AuthStep(props: AuthStepProps) {
                 onClick={() => props.setUseAnother(false)}
                 disabled={props.loading}
               >
+                <ArrowLeft size={16} />
                 {t("auth.backToAccounts")}
               </button>
             )}
             <button type="submit" class="btn-primary" disabled={props.loading}>
+              {!props.loading && <Person size={16} />}
               {props.loading ? t("auth.submit") : t("auth.connect")}
             </button>
           </>
@@ -76,11 +93,13 @@ export default function AuthStep(props: AuthStepProps) {
               class="btn-primary"
               disabled={props.loading || !canConnectSaved}
             >
+              {!props.loading && <Person size={16} />}
               {props.loading ? t("auth.submit") : t("auth.connect")}
             </button>
           </>
         )}
       </form>
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   );
 }

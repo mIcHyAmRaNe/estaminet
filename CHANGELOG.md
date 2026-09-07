@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0
+
 ### Added
 - Multi-account support: save several username + password accounts, pick one
   from the list then Connect (no more disconnect/reconnect dance).
