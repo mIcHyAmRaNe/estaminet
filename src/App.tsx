@@ -5,9 +5,11 @@ import { DEFAULT_TAVERN_ID } from "./lib/config";
 import { useTaverne } from "./lib/hooks/useTaverne";
 import { useBredouille } from "./lib/hooks/useBredouille";
 import { useRecents } from "./lib/hooks/useRecents";
+import { useUpdater } from "./lib/hooks/useUpdater";
 import AuthStep from "./components/auth/AuthStep";
 import TavernSelect from "./components/tavern/TavernSelect";
 import ChatRoom from "./components/chat/ChatRoom";
+import UpdatePrompt from "./components/ui/UpdatePrompt";
 import type { Tavern } from "./lib/types";
 
 type Phase = "auth" | "tavern" | "room";
@@ -33,6 +35,8 @@ export default function App() {
   const taverne = useTaverne(username, idLieu);
   const bredouille = useBredouille(taverne.isConnected);
   const { recents, push: pushRecent } = useRecents();
+  // Shell-level silent update check (banner renders phase-independently).
+  const updater = useUpdater();
 
   const refreshAccounts = async (): Promise<string[]> => {
     try {
@@ -273,6 +277,7 @@ export default function App() {
 
   if (phase !== "room") {
     return (
+      <>
       <div class="auth-page auth-page--compact">
         {phase === "auth" ? (
           <AuthStep
@@ -312,10 +317,17 @@ export default function App() {
           />
         )}
       </div>
-    );
-  }
+      <UpdatePrompt
+        status={updater.status}
+        version={updater.version}
+        onInstall={updater.installAndRestart}
+      />
+    </>
+  );
+}
 
   return (
+    <>
     <div class="tavern-fullscreen">
       <ChatRoom
         messages={taverne.messages}
@@ -343,5 +355,11 @@ export default function App() {
         </div>
       )}
     </div>
+      <UpdatePrompt
+        status={updater.status}
+        version={updater.version}
+        onInstall={updater.installAndRestart}
+      />
+    </>
   );
 }

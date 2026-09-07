@@ -16,6 +16,8 @@
     "@preact/signals-core": "^1.14.4",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2",
+    "@tauri-apps/plugin-updater": "^2",
     "preact": "^10.25.1"
   },
   "devDependencies": {

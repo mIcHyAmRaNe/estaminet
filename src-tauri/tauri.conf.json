@@ -23,7 +23,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "nsis"],
+    "createUpdaterArtifacts": true,
+    "targets": [
+      "deb",
+      "nsis"
+    ],
     "category": "Utility",
     "icon": [
       "icons/32x32.png",
@@ -32,5 +36,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/mIcHyAmRaNe/estaminet/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNDMTlEMUNCNTQ2RUQzOTEKUldTUjAyNVV5OUVaUEhVMkF5SThtb3pydzNnNkplTTNielJqUDIrUzRrVnJ4ald1MEo1aUZ0d0sK"
+    }
   }
 }

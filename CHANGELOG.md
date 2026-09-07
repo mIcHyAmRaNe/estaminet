@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+- Auto-update via GitHub Releases (Tauri updater plugin, signed
+  `latest.json` artifacts; restart to apply through the process plugin).
+- Build provenance attestations plus per-platform SHA256SUMS files on
+  every release; the release workflow publishes immediately (no draft)
+  so update checks never 404.
+
 ## 0.2.0
 
 ### Added
