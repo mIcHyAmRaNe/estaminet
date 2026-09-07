@@ -1,0 +1,366 @@
+/* ── Base Variables (from _base.scss) ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #1e1e2e;
+  --surface: #181825;
+  --surface-solid: #1e1e2e;
+  --surface-hover: #313244;
+
+  --primary: #cba6f7;
+  --primary-hover: #b4befe;
+  --primary-muted: color-mix(in oklab, var(--primary) 14%, transparent);
+  --primary-strong: #8839ef;
+  --on-primary: #1e1e2e;
+
+  --harbor: #f38ba8;
+  --text: #cdd6f4;
+  --text-secondary: #bac2de;
+  --text-muted: #a6adc8;
+
+  --border: #313244;
+  --border-strong: #45475a;
+  --border-accent: color-mix(in oklab, var(--primary) 38%, var(--border));
+
+  --danger: #f38ba8;
+  --danger-muted: color-mix(in oklab, var(--danger) 15%, transparent);
+  --success: #a6e3a1;
+  --warning: #f9e2af;
+
+  --action-text: #f5e0dc;
+  --focus-ring: var(--primary-muted);
+
+  --shadow-sm: 0 1px 2px rgba(17, 17, 27, 0.5);
+  --shadow-md: 0 4px 14px rgba(17, 17, 27, 0.55);
+  --shadow-lg: 0 16px 48px rgba(17, 17, 27, 0.6);
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  --gutter: clamp(16px, 4vw, 48px);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Auth Styles (from _auth.scss) ── */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 2rem var(--gutter);
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 460px;
+}
+
+.auth-form {
+  background: var(--surface-solid);
+  padding: var(--space-8);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+
+.auth-form h1 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  font-size: var(--text-sm);
+}
+
+.auth-error {
+  background: rgba(217, 44, 44, 0.08);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  white-space: pre-line;
+  border: 1px solid color-mix(in oklab, var(--danger) 22%, transparent);
+}
+
+.auth-status {
+  background: color-mix(in oklab, var(--success) 12%, transparent);
+  color: var(--success);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  border: 1px solid color-mix(in oklab, var(--success) 18%, transparent);
+}
+
+.field {
+  margin-bottom: var(--space-4);
+}
+
+.field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: var(--surface-solid);
+  color: var(--text);
+  appearance: none;
+  font-size: var(--text-md);
+  font-family: var(--font-sans);
+}
+
+.field select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 13px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-muted);
+}
+
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 5px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.field-input-wrap {
+  position: relative;
+}
+.field-input-wrap input {
+  padding-right: 36px;
+}
+.field-input-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.field-input-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.auth-toggle {
+  text-align: center;
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+.auth-toggle a { cursor: pointer; }
+
+.btn-primary {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  font-size: var(--text-md);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s, transform 0.12s;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-icon {
+  border: none;
+  background: transparent;
+}
+
+/* ── Chat Styles ── */
+.tavern-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  background: var(--surface-solid);
+}
+
+.chat-interface {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.chat-input-form {
+  display: flex;
+  gap: 10px;
+}
+
+.chat-input-form input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  background: var(--surface-solid);
+  color: var(--text);
+}
+
+.chat-input-form button {
+  padding: 10px 20px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.chat-input-form button:disabled {
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.message-line {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+}
+
+.msg-normal {
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+.msg-emote {
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+  font-style: italic;
+}
+.msg-whisper {
+  background: color-mix(in oklab, var(--warning) 12%, transparent);
+}
+.msg-system {
+  background: color-mix(in oklab, var(--success) 10%, transparent);
+  font-weight: bold;
+}
+.msg-error {
+  background: var(--danger-muted);
+  color: var(--danger);
+}
+
+.timestamp {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  margin-right: 10px;
+}
+
+.status {
+  color: var(--success);
+  font-weight: bold;
+}
+
+.error {
+  color: var(--danger);
+  font-weight: bold;
+}
+
+.disconnect-button {
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--danger);
+  color: var(--on-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.disconnect-button:disabled {
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}

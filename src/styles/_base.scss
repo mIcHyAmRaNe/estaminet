@@ -1,0 +1,248 @@
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-500-latin.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-500-latin-ext.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-500Italic-latin.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-500Italic-latin-ext.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-700-latin.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-700-latin-ext.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-700Italic-latin.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Ubuntu";
+  src: url("../assets/fonts/Ubuntu-700Italic-latin-ext.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Cascadia Code";
+  src: url("../assets/fonts/CascadiaCode-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  src: url("../assets/fonts/Spectral-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spectral";
+  src: url("../assets/fonts/Spectral-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cinzel";
+  src: url("../assets/fonts/Cinzel-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cinzel";
+  src: url("../assets/fonts/Cinzel-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #1e1e2e;
+  --surface: #181825;
+  --surface-solid: #1e1e2e;
+  --surface-hover: #313244;
+
+  /* CDN assets — keep in sync with src/lib/config.ts CDN_TAVERN / TAVERN_BG */
+  --tavern-bg: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/fonds/fondNormal_nuit.jpg");
+  --tavern-cadre-vide: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadreVide.png");
+  --tavern-cadre-plein: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadrePlein.png");
+  --tavern-lisere: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/lisere.png");
+  --tavern-zone-repeat: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/zoneTchat_repeat.png");
+
+  --primary: #cba6f7;
+  --primary-hover: #b4befe;
+  --primary-muted: color-mix(in oklab, var(--primary) 14%, transparent);
+  --primary-strong: #8839ef;
+  --on-primary: #1e1e2e;
+
+  --harbor: #f38ba8;
+  --text: #cdd6f4;
+  --text-secondary: #bac2de;
+  --text-muted: #a6adc8;
+
+  --border: #313244;
+  --border-strong: #45475a;
+  --border-accent: color-mix(in oklab, var(--primary) 38%, var(--border));
+
+  --danger: #f38ba8;
+  --danger-muted: color-mix(in oklab, var(--danger) 15%, transparent);
+  --success: #a6e3a1;
+  --warning: #f9e2af;
+
+  --action-text: #f5e0dc;
+  --focus-ring: var(--primary-muted);
+
+  --shadow-sm: 0 1px 2px rgba(17, 17, 27, 0.5);
+  --shadow-md: 0 4px 14px rgba(17, 17, 27, 0.55);
+  --shadow-lg: 0 16px 48px rgba(17, 17, 27, 0.6);
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  --gutter: clamp(16px, 4vw, 48px);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-md: 15px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 23px;
+  --text-2xl: 27px;
+
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-body: "Ubuntu", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  --font-fiction: "Spectral", Georgia, serif;
+  --font-display: "Cinzel", serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", ui-monospace, "Fira Code", monospace;
+}
+
+[data-theme="light"] {
+  --bg: #eff1f5;
+  --surface: #e6e9ef;
+  --surface-solid: #ffffff;
+  --surface-hover: #ccd0da;
+  --primary: #8839ef;
+  --primary-hover: #7287fd;
+  --text: #4c4f69;
+  --text-secondary: #5c5f77;
+  --text-muted: #6c6f85;
+  --border: #ccd0da;
+  --border-strong: #bcc0cc;
+  --danger: #d20f39;
+  --success: #40a02b;
+  --shadow-sm: 0 1px 2px rgba(220, 224, 232, 0.08);
+  --shadow-md: 0 4px 14px rgba(220, 224, 232, 0.1);
+  --shadow-lg: 0 16px 48px rgba(220, 224, 232, 0.14);
+}
+
+html,
+body {
+  height: 100%;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:where(a, button, [tabindex], select, input[type="checkbox"], input[type="radio"], summary):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { border-radius: var(--radius-sm); background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+::-webkit-scrollbar-track { background: transparent; }
+
+::selection { background: var(--primary-muted); color: var(--text); }
+:where(input, textarea) { caret-color: var(--primary); }
+
+html { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }

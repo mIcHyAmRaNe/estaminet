@@ -1,0 +1,634 @@
+{
+  "cities": [
+    {
+      "name": "Arles (Comté de Provence)",
+      "taverns": [
+        {
+          "tavern_id": 66423,
+          "tavern_name": "Au SchblinG",
+          "description": "🅱🅸🅴🅽🆅🅴🅽🆄🅴 à tous les Villageois, et Voyageurs ! (′ʘ⌄ʘ‵) ☛ En ce moment : Concours des 6 Plumes = Tir à L-Arc ! (Allez à la lice, dernier onglet Tournoi) ! Venez en halle nous conter vos exploits !"
+        },
+        {
+          "tavern_id": 1839,
+          "tavern_name": "L Arlésienne",
+          "description": "🔆 Bienvenue à L Arlésienne 🔆 Venez pousser la porte de notre Taverne Municipale ! ツ Codes Cadeaux du moment : F2TD2UATW8 = 1 Pâté de Foie des Familles, PD1VHFY7GZ = 1 Part de Galette, BM6P9QEM21 = 1 Datte, UWO5AKL6X4 = 1 Philtre Fraîche Boue"
+        },
+        {
+          "tavern_id": 84756,
+          "tavern_name": "🐺🐺 Au cœur des Loups 🐺🐺",
+          "description": "Je te souhaite la bienvenue parmi nous. Je suis très content de t’accueillir aujourd’hui et j’espère que tu te plairas ici. N’hésite pas à me solliciter ou un membre de la famille."
+        },
+        {
+          "tavern_id": 74708,
+          "tavern_name": "L Ortie d Or ☼",
+          "description": "Icelieu, point de clans, point de discorde, tout le monde peut entrer et profiter d'un moment paisible ou amusant. POLITIQUE INTERDITE !!! Dans chaque Ortie d Or, vous pourrez trouver..."
+        },
+        {
+          "tavern_id": 62322,
+          "tavern_name": "La taverne du Bonheur",
+          "description": "Bienvenue à la taverne du bonheur. Un sourire est bien mieux pour la journée que de tirer la tête. Amusez-vous, profitez de la vie. Ici vous ne trouverez que de la joie."
+        },
+        {
+          "tavern_id": 85581,
+          "tavern_name": "𝔏𝔢𝔰 𝔍𝔬𝔩𝔦𝔢𝔰 𝔠𝔥𝔬𝔰𝔢𝔰",
+          "description": "Bienvenue *Aux Jolies Choses* ! Lorsque vous franchirez la porte, vous pénétrerez dans une jolie petite auberge conviviale. L'atmosphère s'y veut chaleureuse et accueillante."
+        },
+        {
+          "tavern_id": 64341,
+          "tavern_name": "🌴 Le petit bulochoumi",
+          "description": "100 menus à disposition au 15 janvier 1470. YA - pain d'épices (5.40 écus), YAPU-K pain+maïs (8 écus) «────── « ⋅ʚ♡ɞ⋅ » ──────»"
+        },
+        {
+          "tavern_id": 77621,
+          "tavern_name": "L Esprit d Eloi",
+          "description": "Ici s’abreuvent les cœurs purs, épris et passionnés. Ici l'ange du bonheur y fait entendre son babil joyeux à l'image du chérubin voletant de bras en bras."
+        },
+        {
+          "tavern_id": 85968,
+          "tavern_name": "Hakonslot Arlesien",
+          "description": "Le hakonslot ou forteresse de Hakon, est une taverne aux dimensions verticales hors norme. Le propriétaire, un géant danois de 2m50, a bâti la taverne de ses mains."
+        },
+        {
+          "tavern_id": 83012,
+          "tavern_name": "Les Cigales en Vadrouille",
+          "description": "Poussez la porte de la taverne et imprégnez-vous des effluves et des saveurs de la Provence. Bonne humeur et convivialité autour de chopes de bière et de notre dé."
+        },
+        {
+          "tavern_id": 81545,
+          "tavern_name": "Romané Chavé",
+          "description": "Bienvenue dans la taverne du clan des Romané Chavé. On vous souhaite une très bonne année, santé, bonheur et prospérité. Menus : - pain à la sciure (5 écus, 2 pts de faim) - toast..."
+        },
+        {
+          "tavern_id": 85834,
+          "tavern_name": "🦇🌼🌞 Ô rythme les saisons ! 🔥❄️",
+          "description": "⚠️ Interdit aux âmes sensibles ! Reconstruite pour la dernière fois à la sortie de la ville entre les remparts. Même porte en chêne..."
+        },
+        {
+          "tavern_id": 85641,
+          "tavern_name": "𝐋 𝐄𝐬𝐭𝐚𝐧𝐪𝐮𝐞𝐭 𝐝𝐞𝐥 𝐋𝐮𝐭𝐳",
+          "description": "Réouverture de notre auberge-relais, emportée par une tempête une sombre nuit d'octobre. Nous vous invitons à avoir une pensée solennelle pour les 351 bières perdues lors de cette nuit tragique."
+        },
+        {
+          "tavern_id": 86049,
+          "tavern_name": "A l'écureuil qui pisse sur ses noisettes II",
+          "description": "[23/12 : 1 Bière au beurre (TX7UI9BPP0) / Poudre Inspiration Divine (QBH29ULV2H)]. Ici, c'est comme le mess d'un bateau, avec des hublots à la place des fenêtres, deux hamacs au fond..."
+        },
+        {
+          "tavern_id": 84900,
+          "tavern_name": "Chez les Z' Amoureux",
+          "description": "Taverne avec un très grand bain thermal dans la pièce arrière. Pour le moment que des boissons à 1 écu : bière, limonade, vin (rouge, blanc ou rosé), alcool, tisane. Chambres à..."
+        },
+        {
+          "tavern_id": 83984,
+          "tavern_name": "RELAIS 2",
+          "description": null
+        },
+        {
+          "tavern_id": 80206,
+          "tavern_name": "Lord",
+          "description": null
+        },
+        {
+          "tavern_id": 75605,
+          "tavern_name": "Au repaire éphémère",
+          "description": "Le repaire éphémère revient... D'une idée lancée à un retour de long voyage, des débuts aux parfums orientaux pour les mets proposés. Aujourd'hui il n'a plus d'éphémère que le nom."
+        },
+        {
+          "tavern_id": 74889,
+          "tavern_name": "Relais numéro 4 : loasis",
+          "description": null
+        },
+        {
+          "tavern_id": 70255,
+          "tavern_name": "🍺🍻🥂🍷🥃🍸🍹🍾Les Ailes d'Harpia🍺🍻🥂🍷🥃🍸🍹🍾",
+          "description": "C’est une maison étroite de 15 pieds de large et assez profonde (40 pieds). En entrant, on aperçoit la cage d'escalier au fond."
+        },
+        {
+          "tavern_id": 66391,
+          "tavern_name": "L Ange Blond ...",
+          "description": "Bienvenue à la Taverne l'Ange Blond. L'Ange blond, pour ceux qui ne savent pas, c'est ma Puce Eneka... La Taverne regorge de Nourritures... 1/ Un verre de bienvenue sera offert à chaque nouveau client."
+        },
+        {
+          "tavern_id": 65190,
+          "tavern_name": "TDC — Mathy a pris les chemins de Fatima",
+          "description": null
+        }
+      ]
+    },
+    {
+      "name": "Nîmes (Comté du Languedoc)",
+      "taverns": [
+        {
+          "tavern_id": 85704,
+          "tavern_name": "Connemara Irish Pub",
+          "description": "Bienvenue dans mon pub Irlandais. Qui se veut convivial avec ambiance Irlandaise et servi de ma bière brune à la mousse onctueuse que je fais moi-même et nommée la Black Lady."
+        },
+        {
+          "tavern_id": 1603,
+          "tavern_name": "💃🏽 🍷 La Reyne de Nimes 🍷 🕺",
+          "description": "✨ Bienvenue à Nîmes ! ✨ La Reyne de Nîmes vous ouvre ses portes. Du nom de l’amphithéâtre emblématique de la ville, la taverne municipale vous accueille pour une pause gourmande."
+        },
+        {
+          "tavern_id": 81054,
+          "tavern_name": "La taverne Dardamel",
+          "description": "La taverne Dardamel, propriété de Dalerand et Merlette, est un chaleureux refuge, avec des murs en torchis, et un grand âtre crépitant en son cœur."
+        },
+        {
+          "tavern_id": 71516,
+          "tavern_name": "HERMINNA",
+          "description": "Sur la route de Nîmes à Arles, L’Herminna est le passage obligé. Sa tavernière toujours souriante vous accueille avec son pain tout droit sorti du four et le maïs du patron."
+        },
+        {
+          "tavern_id": 84887,
+          "tavern_name": "The Scaled Flame",
+          "description": null
+        },
+        {
+          "tavern_id": 86208,
+          "tavern_name": "Chez Vic le S",
+          "description": null
+        },
+        {
+          "tavern_id": 84409,
+          "tavern_name": "Hakonslot de Nimes",
+          "description": "Le hakonslot ou forteresse de Hakon, est une taverne aux dimensions verticales hors norme. Le propriétaire, un géant danois de 2m50, a bâti la taverne de ses mains."
+        },
+        {
+          "tavern_id": 68842,
+          "tavern_name": "Chez les Valfrey Tassin",
+          "description": "Charmante Taverne où Noéline de Valfrey Tassin se fera un plaisir de vous accueillir. Un menu pour les personnes qui ont besoin d'aide au début ou après un brigandage. Des conseils..."
+        },
+        {
+          "tavern_id": 53988,
+          "tavern_name": "Gite des Templiers 38 Nimes",
+          "description": "~~~~~~~~ Bienvenue à la taverne du Gite des Templiers 38 Nîmes ~~~~~~~~ Les 11 commandements du Gite des Templiers : Commandement 1 : De tisane, jamais tu ne boiras. Commandement 2 : ..."
+        },
+        {
+          "tavern_id": 87313,
+          "tavern_name": "Tahiana — Les Copains d'abord",
+          "description": "Lieu de repos, de partage. Pour vous permettre de passer un bon moment avec amis et connaissances. On y vient pour partager une bière, déguster un encas ou échanger objets et services."
+        },
+        {
+          "tavern_id": 85820,
+          "tavern_name": "Zajazd gladiatora",
+          "description": null
+        },
+        {
+          "tavern_id": 83444,
+          "tavern_name": "Au Croc aux Deals",
+          "description": "Bienvenue Au Croc aux Deals ! Taverne chaleureuse et atypique nichée au cœur de Nîmes. Ici, on trinque et on troque, ce lieu mêle convivialité, bonnes affaires et saveurs locales."
+        },
+        {
+          "tavern_id": 82988,
+          "tavern_name": "Ici mieux qu'en face",
+          "description": "Taverne appartenant à la famille de Pique. Ici mieux qu'en face n'a aucun but lucratif, c'est juste un endroit pour venir discuter de tout et de rien, tout en picolant."
+        },
+        {
+          "tavern_id": 80215,
+          "tavern_name": "O.M",
+          "description": null
+        },
+        {
+          "tavern_id": 79350,
+          "tavern_name": "La Mano",
+          "description": "Nous sommes une fraternité d'intrépides, de ceux qui défient les lois et convoitent les richesses des puissants. Mais nous avons besoin de renforts..."
+        },
+        {
+          "tavern_id": 74949,
+          "tavern_name": "Annexe: Maison des soupirs",
+          "description": null
+        },
+        {
+          "tavern_id": 72624,
+          "tavern_name": "·°¯`·•🌹■🌼■🌸ꕥ 𝐃𝐄 𝐕𝐄𝐑𝐑𝐄 𝐄𝐍 𝐕𝐄𝐑𝐑𝐄 ꕥ🌸■🌼■🌹•·´¯°·",
+          "description": "Un endroit simple et accueillant avec des plats traditionnels et la bière qui coule à flot. Le mobilier est modeste mais vous y trouverez une ambiance chaleureuse et festive."
+        },
+        {
+          "tavern_id": 71940,
+          "tavern_name": "Nîme-chant, ni mercenaire!",
+          "description": "Bonjour à vous tous et bienvenue dans une des tavernes de l'armée des Septs : Une organisation militaire indépendante qui se bat pour protéger le peuple et maintenir la paix."
+        },
+        {
+          "tavern_id": 70243,
+          "tavern_name": "🍺🍻🥂🍷🥃🍸🍹🍾Les Ailes d'Harpia🍺🍻🥂🍷🥃🍸🍹🍾",
+          "description": "Petit bâtiment en pisé avec façade en pierre non loin de la place du marché. Au rez-de-chaussée, une épaisse poutre en sapin supporte le plancher de l'étage qui ressort sur la façade."
+        },
+        {
+          "tavern_id": 67769,
+          "tavern_name": "L Ange Blond ...",
+          "description": "Bienvenue à L'Ange Blond. Bières à volonté. Eneka et moi vous souhaitons une bonne soirée dans notre taverne."
+        },
+        {
+          "tavern_id": 63770,
+          "tavern_name": "TDC — Jehanne, vous n'êtes pas qu'une image",
+          "description": "####################### ------------ 𝑻𝑶𝑼𝑻 𝑫𝑼 𝑪𝑹𝑼 ------------ --------- by SaS Sir Anderson ---------- ####################### OSEZ VISITER LES LIEUX."
+        },
+        {
+          "tavern_id": 54954,
+          "tavern_name": "Au Ma-Cici-Dji-Johny-Sachy",
+          "description": "01/03/2020 : Sainte Cicou est née. 1/04/2020 : J'offre mon coquelicot sacré à MON Dji, vœux prononcés l'un face à l'autre. Durée déterminée : 1 mois de folie."
+        }
+      ]
+    },
+    {
+      "name": "Montpellier (Comté de Languedoc)",
+      "taverns": [
+        {
+          "tavern_id": 49107,
+          "tavern_name": "🍇🍷La Ronde des Tonneaux🍷🍇",
+          "description": "╔═══ஜ🍺۩TAVERNE 10 PLACES۩🍺ஜ═══╗ 👗UNE PETITE FOLIE VESTIMENTAIRE🧥, 🧵🪡🎀 Au fil d or - Echoppe de tisserand, chez Gueny (fofo de la ville). ╚═══ஜ۩ STOCK ۩ஜ═══╗ Réserves de la cave et du garde manger au: 17/04/1474 🍺 chopes de bière : 6245- 🍞 miches de pain : 8079- 🌽 sacs de maïs: 2112- ╚═══ஜ۩۞۩ஜ═════════╝ ╔═══ஜ۩ MENUS ۩ஜ══════╗ ⛏️-La belle miche : Un petit pains rond a 5,30 écus. 📚- Spécial Érudit : Un pain et un maïs a 8,30 écus."
+        },
+        {
+          "tavern_id": 90568,
+          "tavern_name": "\"Au serpent qui mord \"",
+          "description": "Bains publics qui remplacent ceux disparus de la ville. Dans cet établissement, vous trouverez trois bassins, un froid, un tiède et un chaud. À l'écart des regards, deux bassins, un réservé uniquement aux femmes, un autre réservé uniquement aux hommes. La taverne possède un comptoir avec de quoi se désaltérer et de quoi remplir votre estomac."
+        },
+        {
+          "tavern_id": 89897,
+          "tavern_name": "🔥 Au feu glacé - bains montpellierains ❄",
+          "description": "Bienvenue à toutes et à tous dans nos bains montpellierains. NOUVEAUTE : Salle de massage disponible sur demande à la tavernière ou au patron de l'établissement. Dans une immense pièce chauffée, dès votre arrivée, vous trouverez 3 vestiaires individuels et 2 collectifs afin de vous déshabiller et vous rhabiller en sortant. 3 bains seront à votre disposition : un bain bleu, central, un bain vert, familial, et un bain rouge, pour les personnes ayant envie de plus de piquant. Un bar vous attend près du bain bleu pour vos consommations."
+        },
+        {
+          "tavern_id": 84733,
+          "tavern_name": "🌈 L ARC EN CIEL 🌈",
+          "description": "Menu 1 : miche de pain blanc à 5,20 écus (2pts). Menu 2 : pain au maïs à 8 écus (3pts). Au bord des plages sauvages de Montpellier, là où la mer lèche les dunes, se dresse la taverne de l’Arc en ciel. Rugueuse mais accueillante, elle sent le sel, le vin, le feu de bois et les secrets mal gardés. À sa tête, Mya de Montbazin, une femme au regard d’acier et aux cheveux noirs, règne sans fléchir, avec fermeté, cœur… et une dague à la ceinture."
+        },
+        {
+          "tavern_id": 90249,
+          "tavern_name": "La Plage de Montpellier",
+          "description": "Un petit coin modeste, fait de sable blond, de quelques pins âgés qui promettent de l’ombre pour les journées ensoleillées. Sur la plage, quelques pierres disposées en cercle entourent des cendres depuis trop longtemps éteintes. Un coffre usé, caché dans la végétation, renferme draps et bouteilles. Ce lieu appartenait autrefois à Ylva Osmund Al-Rahman et depuis Juillet 1474, c’est son veuf qui l’a repris, plantant un panneau en bois sur lequel est gravé : \"In memoriam Ylvae.\""
+        },
+        {
+          "tavern_id": 11563,
+          "tavern_name": "🍇TAVERNA DE MONTPELHIÈR 🍇",
+          "description": "Bienvenue à la Taverne Municipale de Montpellier. Entre nos murs, l’accueil est un art et chaque plat une déclaration d'amour. Découvrez une cuisine authentique, élaborée avec soin, pour une expérience sensorielle qui vous donnera, à coup sûr, le goût de revenir. Pain perdu au pop-corn : 8 écus. Pain perdu simple : 5,40 écus."
+        },
+        {
+          "tavern_id": 89985,
+          "tavern_name": "Aux deux Lys",
+          "description": "La salle commune des Deux Lys est vaste et lumineuse. Face au seuil se trouve un long comptoir qui occupe une bonne partie de la salle. Derrière celui-ci se trouvent la cuisine et la réserve. Le cœur de la pièce est occupé par plusieurs petites tables disposées de manière à laisser chacun trouver sa place, tandis que deux grandes tablées bordent le passage afin de recevoir les groupes de voyageurs. Deux cheminées se font également face de chaque côté de la salle, chacune entourée de fauteuils confortables. Boissons : Alcool (vin, hypocras, cervoise, hydromel, liqueur ou cidre) ou Sans alcool (Tisanes ou lait). Menus : À venir."
+        },
+        {
+          "tavern_id": 67775,
+          "tavern_name": "L Ange Blond...",
+          "description": "Bienvenue à toutes et à tous..."
+        },
+        {
+          "tavern_id": 82847,
+          "tavern_name": "Le Revers de la Lame 🍷",
+          "description": "Un vieux bois foncé, marqué par le temps, avec une gravure au fer représentant une dague effleurant une rose, comme une promesse élégante mais dangereuse. Inscription gravée en lettres dorées : 'On y entre pour oublier, on en sort marqué. Méfiez-vous de ce qui se glisse dans les verres et les regards. Boissons, mensonges, murmures et vérités. Ouvert jusqu’à la dernière morsure de la nuit.'"
+        },
+        {
+          "tavern_id": 85451,
+          "tavern_name": "Ostalariá del Fénis",
+          "description": "Dans une ruelle pavée de Montpellier, une taverne aux murs de pierre claire ouvre ses volets de bois lourd. Au-dessus de la porte, une enseigne au phénix dorée balance au vent. À l’intérieur, l’odeur du vin chaud se mêle à celle du bois brûlé. Des tables grossières, taillées dans des troncs, accueillent voyageurs, artisans et étudiants venus débattre, jouer aux dés ou trouver une chambre confortable pour la nuit."
+        },
+        {
+          "tavern_id": 71118,
+          "tavern_name": "la taverne joyeuse😅🍺🍰",
+          "description": "Ici, on se rince le gosier, on ne se rince pas les yeux et on fait en sorte de consommer de temps en temps. Toutes nos boissons sont servies avec quelques amuses-gueules gracieusement. Pain perdu rôti au beurre miel, et flambé à l'armagnac : 5.50 écus. Soupe au jus de poissons avec pain aille et sa rouille et son épi de maïs : 8.50 écus. Cognac, armagnac, vins fins, bières rousses, brunes, blondes, hypocras et des nouveautés suivant arrivage. Lait et tisane pour les travailleurs ou les petites natures à volonté."
+        },
+        {
+          "tavern_id": 90380,
+          "tavern_name": "L’Inévitable",
+          "description": "Nom bref, réputation immense. On n’explique pas pourquoi tout le monde y passe… on le constate. Banquets, affaires, mariages : si c’est important, c’est ici que cela se vit. Voyageurs de passage, habitants et amis, poussez notre porte et venez partager un moment de bonne humeur autour d'une chope de bière bien fraîche. Deux menus généreux, préparés avec des produits de qualité, vous attendent pour satisfaire les plus fins gourmets comme les plus grands appétits. Et si je me suis absentée quelques instants, je ne vais pas tarder, installez-vous. Petite nouvelle : les jeunes orphelins de moins de 10 ans peuvent venir réclamer une crêpe gratuite à la tavernière."
+        },
+        {
+          "tavern_id": 58430,
+          "tavern_name": "Chez Malice",
+          "description": "Les règles sont simples et ne souffrent AUCUNE entorse : TAVERNE REFUGE POUR FEMMES UNIQUEMENT !!! Aucun geste déplacé sans consentement préalable, aucune demande insistante, aucun murmure inaudible. Si votre plaisir est d'importuner, le lieu ne vous est pas des plus accueillants. Deux menus sont proposés : le Croquant de Sel (pain frais du jour) : 5,75 écus, l'en-cas de l'ogre (pain complet au maïs) : 8,95 écus. Si vous ne buvez pas tout, la maison propose le choppy-bag..."
+        },
+        {
+          "tavern_id": 88768,
+          "tavern_name": "Les angelots fripons",
+          "description": null
+        },
+        {
+          "tavern_id": 62521,
+          "tavern_name": "La Belle Epi",
+          "description": "Bienvenue à La Belle Épi ! Ici, vous ne serez pas victime de discriminations sous un prétexte ridicule. Chacun a le droit de faire connaître son avis et ses opinions, à la condition évidente de respecter les autres. La patronne se réserve le droit de jeter à la rue toute personne qui ne respecterait pas les lois essentielles de savoir-vivre. Menu : le Quignon du pauvre : 5,15 écus (2 pts de faim), le Plat du Sage : 8,15 écus (3 pts de faim)."
+        },
+        {
+          "tavern_id": 90426,
+          "tavern_name": "🍺🍺🍺🍺🍺",
+          "description": null
+        },
+        {
+          "tavern_id": 69280,
+          "tavern_name": "************** /█ 🍽 CHEZ SOU❤️&zwj;SOU 🛀 🛏*************",
+          "description": "STOCKS ET CAVE REMPLIS LE 2 AOÛT 1474. BON APPETIT ET SANTÉ !!! Si vous voyez trouble, c'est que vous souffrez de déshydratation. Vite vite, venez vous désaltérer. Fatigués ? Voyageurs, il y a des chambres à l'étage ainsi qu'une salle pour les ablutions. Pas un château, mais la literie est de bonne qualité, il y a l'essentiel, et surtout, c'est propre ! Taverne conviviale. Le tavernier ou la tavernière vous accueillera avec le sourire, puis vous servira..."
+        },
+        {
+          "tavern_id": 83798,
+          "tavern_name": "🌊Crique des Secrets 🌊",
+          "description": "Petit bout de plage sur Montpellier ayant vu le jour le 25 juin 1473. Toutes saisons, nuits et jours, havre de paix qui longe la plage, une petite taverne en forme de maisonnette trône dans la végétation, un feu rustique accompagne si besoin et parfois quelques tonneaux d'alcools traînent sur le sable. Intérieur ou extérieur est à bonnes convenances des utilisateurs."
+        },
+        {
+          "tavern_id": 75364,
+          "tavern_name": "Chez de Rolo 🥂",
+          "description": "Bienvenue dans notre Maison! Ici, vous trouverez toujours des repas chauds et une excellente bière des moines bavarois. En outre, dans notre Atelier de Rolo, vous pouvez trouver de beaux vêtements et de nombreux objets que tout le monde devrait posséder. Service à domicile : pour ceux qui veulent le repas confortablement à la maison, ils peuvent le commander aux propriétaires qui le réserveront à votre nom au marché (viande à 16,50 écus). Menus : Soupe de maïs avec un peu d’huile et croûtons dorés (pain+maïs) à 8,40 écus, Soupe au pain avec de l’huile à 5,30 écus."
+        },
+        {
+          "tavern_id": 79818,
+          "tavern_name": "Chez Poum c´est mieux qu´ailleurs.",
+          "description": "Petite taverne à l'ambiance intimiste pour les conversations entre amis, le rire, les jeux, les rencontres fortuites ou non. Ne pas confondre avec un bordel. Tout le monde y est le bienvenu. De la musique égaie les lieux grâce à son troubadour. La chope de bière se décline en rousse, blonde, brune pour la modique somme de 95 deniers. Menu J'AI FAIM : 7,50 écus (3 PF). Menu Poumcorn : 5 écus (2 PF)."
+        },
+        {
+          "tavern_id": 91039,
+          "tavern_name": "LA PLAGE PRIVEE",
+          "description": null
+        },
+        {
+          "tavern_id": 90537,
+          "tavern_name": "✽ Le Comptoir des Marchands Ambulants ✽【CMA】",
+          "description": "Ici, c’est ✽ Le Comptoir des Marchands Ambulants ✽【CMA】. On boit, on mange et on rit. Et puis on se retrouve ici pour débattre, marchander et acquérir des marchandises à bon prix... Menu : Maïs à la Montpelliéraine (2 pts de faim) à 5,50 écus. Bière fraîche à 0,85 écus et tisane gratuite. Ouverture de la taverne le 22 juillet 1474. 8 tavernes【CMA】 à découvrir : Arles, Aix, Brignoles, Marseille, Lyon, Montpellier, Toulouse et Rodez."
+        },
+        {
+          "tavern_id": 89837,
+          "tavern_name": "La Cantinaccia 🪔",
+          "description": "Dove tra il bere ed il fumare nessuno vi caccia… sempre SE: Si ha la giusta educazione ed il giusto rispetto… Non si creino disturbi alla convivialità… Si vada a genio al Proprietario Indiscusso e Taverniere di turno... Di BIRRA quanta ne volete... Où, entre deux verres et deux fumées, personne ne vous chasse… toujours SI : Vous êtes poli et respectueux… Vous ne perturbez pas l’ambiance conviviale… Vous êtes aimable avec le propriétaire incontesté et tenancier de la taverne… Bière à volonté…"
+        },
+        {
+          "tavern_id": 88855,
+          "tavern_name": "Falconia",
+          "description": "Si vous avez besoin de mercenaires ou de tout autre type de coopération, envoyez-nous un pigeon."
+        },
+        {
+          "tavern_id": 87800,
+          "tavern_name": "Castle",
+          "description": null
+        },
+        {
+          "tavern_id": 87742,
+          "tavern_name": "L’Antre de Perséphone et Bacchus",
+          "description": "Te quiero ma Lucifaire. En retranchement mais toujours dans mon cœur."
+        },
+        {
+          "tavern_id": 87344,
+          "tavern_name": "꧁𓊈𒆜Comptoir maritime𒆜𓊉꧂",
+          "description": "Bientôt un nouveau bateau beaucoup plus gros pour des aventures à la mesure de sa cale. Eh wè !"
+        },
+        {
+          "tavern_id": 85739,
+          "tavern_name": "Moja karczma",
+          "description": null
+        },
+        {
+          "tavern_id": 85239,
+          "tavern_name": "・✦ ʚEl Rınconcıto de Rαzıelle ɞ✦・",
+          "description": "From the heart of Burgos, where stories mingle with exquisite aromas, El Rinconcito de Razielle opens its doors. Founded by the noble Razielle, this is no ordinary tavern, but rather a haven of elegance and splendor, where every corner whispers a tale of warmth and luxury. Menu : Hipocras : 1 pound, Sopa dorada : 5.25 pounds, Manjar blanco : 8.20 pounds. A Haven of Charm and Exclusivity. Step into the magic. Cross the threshold of El Rinconcito de Razielle and discover a world where luxury meets warmth, where every guest is a friend, and every night, a celebration."
+        },
+        {
+          "tavern_id": 84397,
+          "tavern_name": "Le Shebam, là où l*écureuil pisse sur ses noisettes.",
+          "description": "Le Shebam a repris sa routine hivernale et a retrouvé la ville, le parquet, c'est moins chiant que tout ce sable en bord de mer. Cette année, un écureuil a élu domicile dans une des poutres. Il est bien mignon mais il fout le bordel, aussi attention si vous tombez sur une de ses noisettes, ne la mangez surtout pas, l'écureuil pisse dessus ! [1/12/25 Lait de chèvre R1ZDV9H2DT / Tibiscuit XEYJOHKR2V]."
+        },
+        {
+          "tavern_id": 82014,
+          "tavern_name": "La belle voyageuse",
+          "description": null
+        },
+        {
+          "tavern_id": 81964,
+          "tavern_name": "Aux Doux Rêves",
+          "description": null
+        },
+        {
+          "tavern_id": 80345,
+          "tavern_name": "Ordo Flammae Aeternae",
+          "description": "Dear passengers, take a seat and have a drink. Here's a part from the Diary of the First Queen of Greece, Adalyn. Year 1460. I remember their words. There will be intense periods in the Kingdom of Greece. We must be prepared. We must be ready; ready to maneuver, to protect it. That's the purpose. Ordo Flammae Aeternae."
+        },
+        {
+          "tavern_id": 80297,
+          "tavern_name": "The Lord",
+          "description": "In the cradle of night where shadows stir, I, the keeper of secrets, rise, defer. God’s light may burn, fierce and white, but shadows own the endless night. Hope is but a flicker, a quivering flame, dancing in chaos, calling my name. For in my hands, the meek turn bold, and power wears a face of cold. Once, I too fell from Heaven's grace, with thunder's roar and no embrace, bound to depths where fires swell, the throne of ruin, the halls of Hell. Yet even God, in sacred guise, must watch as kingdoms fall and rise..."
+        },
+        {
+          "tavern_id": 79909,
+          "tavern_name": "🌺Le Pavillon des Dames 🌺",
+          "description": "Tavernier(ère) : Romane. Le Pavillon des Dames est un établissement exclusif, réservé à une clientèle féminine triée sur le volet, niché au cœur d’une cité médiévale. Ce lieu d’exception, à la fois élégant et délicieusement feutré, se présente comme un véritable sanctuaire dédié au repos, à la volupté et à la beauté. Chaque pièce, chaque tenture, chaque fragrance y est soigneusement choisie pour inspirer la quiétude et flatter les sens. Parmi les espaces les plus prisés, la salle d’eau se distingue par son atmosphère paisible et ses trois grands baquets de bois poli, remplis d’une eau tiède et parfumée aux huiles florales, invitant à de longs bains apaisants. C’est un havre où les murmures remplacent les paroles, et où le temps semble suspendu, consacré uniquement au bien-être des dames. Et une table de massage."
+        },
+        {
+          "tavern_id": 79475,
+          "tavern_name": "Ordre Royal du Loup Blanc",
+          "description": "Taverne décorée de noir et de blanc, où flottent les étendards de l'Ordre. Lieu d'accueil et de repos, tout est fait pour vous permettre de vous sentir au mieux. Des musiciens jouent dans un coin, sans discontinuer, offrant une ambiance calme et sereine. Bienvenue au sein de notre Taverne, vous pouvez venir rencontrer les membres de l'Ordre si nous sommes en mission parmi vous, ou simplement vous reposer en un lieu serein."
+        },
+        {
+          "tavern_id": 79222,
+          "tavern_name": "🧭 Lieux à et autour de Montpellier 🧭",
+          "description": "Ce lieu apparaît toujours quand on le souhaite, et c'est alors exactement ce que l'on cherchait : une clairière dans la forêt, le marché, les mines, votre maison, les ruelles de Montpellier, un endroit au bord d'une rivière... Celui qui entre en premier détermine le lieu. Celui qui entre ensuite doit d'abord demander quel endroit a été choisi, et jouer en fonction de cela."
+        },
+        {
+          "tavern_id": 79185,
+          "tavern_name": "🐍 Le Venin 🐍",
+          "description": "On appelle venin toute substance toxique produite par des animaux et destinée à tuer ou paralyser leurs proies. Des animaux venimeux : La guêpe de mer, la pieuvre à anneaux bleus, le mamba noir, la veuve noire, le cobra royal, le poisson-pierre, le scorpion jeune à queue royal, le poisson-globe... Deux des plus venimeuses femmes de la Création sont exposées sur une toile à l'entrée de la taverne."
+        },
+        {
+          "tavern_id": 78896,
+          "tavern_name": "LE CAS BARRE",
+          "description": "TAVERNE MUSICALE!!!!!! Des troubadours sont là constamment pour vous accueillir et vous jouer un petit air de musique en toute amitié et sympathie. LES REGLES DE LA TAVERNE : Les liens de troubadours (youtube) sont à confirmer par la tavernière ou la propriétaire et doivent à tout prix rester dans le thème des soirées. Vous avez des propositions d'artiste ou de musique, hésitez pas à me faire un chuchotement pour me le proposer, ils seront sûrement appréciés selon la soirée. CHUCHO RESERVE AUX PROPOSITIONS MUSICALES TOUT AUTRE CHUCHO SONT INTERDITS OU SOUMIS A UNE TOURNEE."
+        },
+        {
+          "tavern_id": 78883,
+          "tavern_name": "Total Hasard",
+          "description": "Venghino Siori Venghino. Do you have a bet in mind? Let me listen to it! FATTI, non parole... Qui si beve e si fuma... Più FATTI di così... se More. Searching for Arena Fighters, if YOU are, send me a request! Welcome. Be wise: Do what you can with what you have where you are. Leave people where they are at. Accept situations for what they are. Not every action needs a reaction."
+        },
+        {
+          "tavern_id": 78827,
+          "tavern_name": "La Buca senese",
+          "description": "Per tutti i senesi in viaggio, un piccolo pezzo di terra senese per voi! 🍷🍇"
+        },
+        {
+          "tavern_id": 78530,
+          "tavern_name": "CHEX KAALYSI (Prononcer Khaleesi)",
+          "description": "URGENT CHERCHE TAVERNIER(E) Écrire à Kaalysi. Bonjour, heureuses de vous accueillir chez nous dans un cadre idyllique où nos tavernières et taverniers s'occuperont de vous. Tavernier(s) : Rickton, Jeremiah, Cavillard. Tavernière(s) : Kaalysi, Marina69, Magaline, Paris manquer, Leohannah, Osmoz, Kameliaa, Ange_lyne, Emiline, Effyie, Gladice, Lusiane, Syriah. PRENEZ LE TEMPS. Quand la tavernière est disponible, laissez-la vous servir. !!! Le Chucho est inutile sauf cas de force majeure !!! NOTE DE LA DIRECTION: (Dame Kaalysi et le personnel se réservent le droit d'entrée et de sortie. Coup de botte gratuite.)"
+        },
+        {
+          "tavern_id": 76163,
+          "tavern_name": "Chez Atre et Sif.",
+          "description": "Salvé, et bienvenue. Toutes et tous peuvent venir, mais la tenancière et le tavernier se réservent le droit d'appeler le videur. Miche des anges à 5,70 écus (1 pain). Salade des Iles à 7,80 écus (1 pain, 1 maïs). Bière à 0,90 écu."
+        },
+        {
+          "tavern_id": 74812,
+          "tavern_name": "Annexe Maison des soupirs",
+          "description": "« Aux soupirs du cœur comme à ceux du corps. » La Maison des Soupirs est un lieu où l’on vient déposer ce que le monde fait peser sur les épaules. La salle principale, chaleureuse et animée, s’organise autour de tables de bois et d’un comptoir accueillant. Au fond, de lourds rideaux de velours marquent la frontière entre le tumulte des voix… et l’abandon. Passé le rideau, sous une large verrière envahie d’une végétation luxuriante, s’étend un onsen aux eaux chaudes et apaisantes. Ici naissent les soupirs : ceux du plaisir retrouvé dans la chaleur de l’eau, ceux de l’amour discret ou assumé, ceux du soulagement enfin accordé aux corps fatigués et aux cœurs lourds."
+        },
+        {
+          "tavern_id": 74767,
+          "tavern_name": "[Lieu de RP au choix]",
+          "description": null
+        },
+        {
+          "tavern_id": 74213,
+          "tavern_name": "WILD FIRE 🔥 💫 O. N. E.",
+          "description": "💫 O. N. E. 🔥"
+        },
+        {
+          "tavern_id": 73445,
+          "tavern_name": "LE CAP",
+          "description": "Changement de cap! Ici on parle commerce, affaires, de développement et de bien d'autres choses. L'intérieur est sobre et lumineux. Je suis un ancien commerçant qui a travaillé dans tout le royaume et ailleurs. Amoureux du voyage, je vous accueillerai avec joie et bienveillance. Je partagerai ma petite expérience et j'aime échanger avec tout ceux qui souhaitent avancer dans leurs vies. Ce lieu n'est pas prévu pour les galipettes !"
+        },
+        {
+          "tavern_id": 73195,
+          "tavern_name": "𝐍𝐮𝐥 𝐁𝐚𝐫  𝐚𝐢𝐥𝐥𝐞𝐮𝐫𝐬 🍻",
+          "description": "🍻 Lieu convivial où la bière coule à flots où les chants sonnent faux mais où le partage l'emporte toujours. Entrer rire, chanter, cartes et pari est l'endroit idéal pour nous tous de discuter, bout de gras, idées et autres grédinerie ! 🍻 Peny and Clyde Barrow💀"
+        },
+        {
+          "tavern_id": 71967,
+          "tavern_name": "Café Chose",
+          "description": "Excellente vue sur le port et quelques petites tables dans un jardin fleuri. À l'intérieur du café, il y a une immense bibliothèque et des murs blancs. Boissons en libre service. Quand vous avez faim, il vous suffit de commander."
+        },
+        {
+          "tavern_id": 69683,
+          "tavern_name": "Death Zone Montpellier",
+          "description": "🇹🇩 Run or die 🇹🇩"
+        },
+        {
+          "tavern_id": 69514,
+          "tavern_name": "The International Club in Montpellier",
+          "description": "Here you are welcome to talk other languages than French! We serve beer and gossip from the world outside. Beer: 0.90 écu."
+        },
+        {
+          "tavern_id": 68350,
+          "tavern_name": "The Knights of Gwydion",
+          "description": "Opening soon."
+        },
+        {
+          "tavern_id": 65238,
+          "tavern_name": "TDC — Mimi secoue les mites de ses habits",
+          "description": "####################### ------------ 𝑻𝑶𝑼𝑻 𝑫𝑼 𝑪𝑹𝑼 ------------ --------- by SaS Sir Anderson ---------- ####################### ___________________ - OSEZ VISITER LES LIEUX - (1) Vous aimez flirter en Haute Société? (2) Vous sentez bon et en êtes fier? (3) Vos pets flairent la rose et vous aimez les vanter auprès de ces dames? (4) Vous appréciez les bonnes choses et, plus que tout, vous aimez dépenser pour étaler vos nombreuses richesses à la vue de tous? Bref, vous êtes peut-être : (a) une personne de la Haute, et c'est tant mieux. (b) un petit bourgeois qui tente l'aventure..."
+        },
+        {
+          "tavern_id": 63694,
+          "tavern_name": "Les Justes Bouffons",
+          "description": "| Le renard mange des oies, | les oies enferment le renard, | à la fin de la journée nous avons tous besoin d’un verre | et d’une collation, | venez à la taverne, | venez danser."
+        },
+        {
+          "tavern_id": 63141,
+          "tavern_name": "The Sinner's Sanctuary: Le désir d'Yvette",
+          "description": "The Sinner's Sanctuary is a family business, a chain of brothels run by divorced couple, Alegriaa Hrvatinić & Overlordsrb Jugović. We respect local regulations and acquire necessary licences, all to ensure you discreet visit to our sanctuary. Indulging with underage personas is prohibited until further notice. Standard service: 20 £, Deluxe threesome: 30 £. Special offer for 𝐆𝐲𝐩𝐬𝐲𝐬, 𝐓𝐫𝐚𝐦𝐩𝐬 & 𝐓𝐡𝐢𝐞𝐯𝐞𝐬. Protected by 𝕯𝖆ž𝖇𝖔𝖌!"
+        },
+        {
+          "tavern_id": 56658,
+          "tavern_name": "🐉🔥🐉 Les Scorpions de Sel 🐉🔥🐉",
+          "description": "🐉🔥🐉 Bienvenue chez Les Scorpions de Sel. 🐉🔥🐉 Né du feu notre scorpion ne ressemble à personne, la grande brûlure lui a tout pris. Il a survécu et maintenant il va tout prendre! Nous, ses fils, affamés, ivres de vie, de liberté et de revanche. Invisibles et omniprésents comme le sel de l’océan, frères de cœur unis par la même eau, là où nous piquons, le brasier illumine. Crème de Maïs (trois maïs) : 9,00 écus. Bière : 0,90 écus. Contactez-nous si vous vous sentez l'âme d'un Scorpion!"
+        },
+        {
+          "tavern_id": 55165,
+          "tavern_name": "🦜💀🦜Le Rafiot du pirate🦜💀🦜",
+          "description": "Bienvenue dans mon petit trou de fond de ruelle, c'est poussiéreux, sale et sa pue! Tout le confort nécessaire pour se sentir comme chez soit!"
+        },
+        {
+          "tavern_id": 54079,
+          "tavern_name": "𝐎𝐜𝐮𝐥𝐮𝐬 𝐓𝐞𝐧𝐞𝐛𝐫𝐚𝐞",
+          "description": "Tu voudrais savoir si il/elle t'aime d'un amour sincère et véritable. Dans combien de temps vous deviendrez parents et si c'est un garçon ou une fille ? Tu as des doutes sur sa fidélité et tu voudrais savoir si il/elle te trompe ? Pour toi Madame Aѕтσяια lève le voile de l'avenir et déchiffre ses mystères. Coincé entre deux échoppes, c'est un rade minuscule plutôt miteux, aux carreaux crasseux."
+        },
+        {
+          "tavern_id": 52068,
+          "tavern_name": "Gite des Templiers 19 Montpellier",
+          "description": "~~~~~~~~~ Bienvenue à la taverne du Gite des Templiers 30 Montpellier ~~~~~~~~~ Les 11 commandements du Gite des Templiers : Commandement 1 : De tisane, jamais tu ne boiras. Commandement 2 : Toujours ta tournée, tu paieras. Commandement 3 : De bière, jamais tu ne refuseras. Commandement 4 : Toujours à pied, tu rentreras. Commandement 5 : Ta soif, jamais n'attendra. Commandement 6 : Des hips, tu feras. Commandement 7 : D'être alcoolique, tu assumeras."
+        },
+        {
+          "tavern_id": 44450,
+          "tavern_name": "La Grande Traversée",
+          "description": "Modeste estaminet construit de planches de bois provenant de la nave génoise La Grande Traversée. Son architecture primaire évoque grossièrement la coque d’un navire. Sur le toit est fixé un mât en haut duquel flotte en guise de pavillon une paire de braies noires. L’intérieur sent l’iode et l'air du large. Des cordages, poulies de bateau, étoiles de mer et filets de pêche servent de décoration. Taverne construite en souvenir de la prestigieuse et célèbre nave génoise du même nom."
+        },
+        {
+          "tavern_id": 43807,
+          "tavern_name": "L’etsicroxe de 🇭 🇦 🇷 🇮 🇧 🇴  🇫🇷  🍷 🇧🇪 🍞",
+          "description": "Bonjour à tous, soyez les bienvenus ! Ici, le pain est fabriqué pour vous par le patron dans sa boulangerie de Lodève. Il vous est proposé à 5,70 écus. En boisson, nous vous proposons une grande sélection de bière belge, mais pas que... Nous avons aussi à la carte : 🍷 🍸 🍹 🍵 ☕ et pour plus petits accompagnés de leurs parents : 🍼 🥛. Établissement créé le 24/02/1463. Stocks au 17/02/1473 : 🍞 20 pains, 🍺 105 choppes. Ici, par le passé, nous avons brûlé sorciers et sorcières, thaumaturges, Lartichouette, Agaron, Missgelsy et autres Mazarines. Mais, ça, c'est dans le passé."
+        },
+        {
+          "tavern_id": 42078,
+          "tavern_name": "Les Cénobytes Tranquilles",
+          "description": "Tonneau de bière mis en perce le 11 janvier 1474. Fruits de saison à 10 écus, vendus à l'unité. (1 point de charisme). Une grande table peut accueillir jusqu'à 10 personnes. Sise dans un quartier cossu de la capitale, une enseigne de fer polychrome, au-dessus de la porte, représente un groupe de moines gras, attablés, le teint rubicond et le visage souriant, certains vidant une chope, tandis que les autres sont occupés à des travaux d'écriture. Attention, la tavernière a le pied leste et un videur musclé prêt à vous raccompagner dehors à coup de pieds aux fesses. Maison convenable, débauchés, passez votre route, il y a assez de bordels à Montpellier pour vous accueillir !"
+        },
+        {
+          "tavern_id": 35104,
+          "tavern_name": "L’Épicurien",
+          "description": "Depuis février 1461, soyez tous les bienvenus à l’Épicurien! Prenez place et laissez-vous tenter par nos spécialités ou encore par notre bière d’abbaye. Menu : Bière d’abbaye : 1,00 écu, Panini : 5,50 écus (Faim : +2), Pièce du Boucher : 17,00 écus (Faim : +2, Force : +2)."
+        }
+      ]
+    },
+    {
+      "name": "Alais (Comté de Languedoc)",
+      "taverns": [
+        {
+          "tavern_id": 72854,
+          "tavern_name": "Le Dragon Vert",
+          "description": "L'Antre du Dragon. Rien de tel qu'un endroit accueillant et chaleureux. Une Cervoise, une Tisane ou un verre de lait. Menu Pain Alaisien => Pain 100 % Joro donc le meilleur. Menu Erudits => Salade Alaisienne 100 % moi (2 pts de faim = 1 pts d'intelligence + 1 pts de charisme). Des tables rondes, des assiettes garnies et des ami(e)s. Crises de fou rire garanties. AINSI VA LA VIE. N'hésitez plus !!! c'est par ICI. Portier : Criez GASTON ^^"
+        },
+        {
+          "tavern_id": 1840,
+          "tavern_name": "Alais viens boire un p’tit coup",
+          "description": "Taverne municipale. Bienvenue à la taverne municipale d’Alais ! Vous trouverez ici de quoi boire, de quoi manger, de quoi festoyer en bonne compagnie, de quoi jouir pleinement de votre vie. La seule question qui s’impose est donc ainsi résumée… Qu’attendez-vous pour y entrer ? 📜 La carte du chef 📜 🍺 Pinte de bière (0,85 écus). Avis de Grégoire (*hips*/5) : C’est bien *hips* bon mais *hips* ça se *hips* vide bien trop *hips* vite. 🥖 La miche gourmande (5,70 écus). Avis d’Eulalie (5/5) : Hmm... cette forme... cette longueur... cette texture.... hmm... Oh !!! Faut que j’aille me changer... 🥖🌽 L Escalivada (9,00 écus). Avis d’Antonio (4,5/5) : P'tin l'aut' fois j'avais faim alors j'dis au tav'nier : vas-y mon gars envoie ta grosse mich'. Oh non !! si té des légumes grillés avec la potée de maïs (1 pts de charisme). V'là qu'il d'pose la bête. J'graille direct, c'est bon mais j'pouvais pu. J'tais content."
+        }
+      ]
+    },
+    {
+      "name": "Bergerac (Comté de Périgord)",
+      "taverns": [
+        {
+          "tavern_id": 2141,
+          "tavern_name": "Taverne de Bergerac",
+          "description": null
+        }
+      ]
+    },
+    {
+      "name": "Perigeux (Comté de Périgord)",
+      "taverns": [
+        {
+          "tavern_id": 11565,
+          "tavern_name": "La Belle Pétrocorienne",
+          "description": null
+        }
+      ]
+    },
+    {
+      "name": "Sarlat (Comté de Périgord)",
+      "taverns": [
+        {
+          "tavern_id": 61966,
+          "tavern_name": "Taverne de Sarlat",
+          "description": null
+        }
+      ]
+    },
+    {
+      "name": "Villefranche (Comté de Rouergue)",
+      "taverns": [
+        {
+          "tavern_id": 62815,
+          "tavern_name": "Taverne de Villefranche",
+          "description": null
+        }
+      ]
+    },
+    {
+      "name": "Lyon (Comté Lyonnais)",
+      "taverns": [
+        {
+          "tavern_id": 88963,
+          "tavern_name": "L'Antre de la Louve",
+          "description": null
+        }
+      ]
+    },
+    {
+	  "name": "Inconnue",
+	  "taverns": [
+	    {
+	      "tavern_id": 85905,
+	      "tavern_name": null,
+	      "description": null
+	    },
+	    {
+	      "tavern_id": 47599,
+	      "tavern_name": null,
+	      "description": null
+	    }
+	  ]
+	}
+  ]
+}

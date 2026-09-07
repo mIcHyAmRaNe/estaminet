@@ -1,0 +1,545 @@
+@import '../_base.scss';
+
+/* ═══════════════════════════════════════════
+   TAVERN / RPG ROOM — Estaminet adaptation
+   Inspired by rk_chat _room.scss (65% characters / 35% chat)
+   ═══════════════════════════════════════════ */
+
+.tavern-fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #000;
+}
+
+.room {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+  font-family: var(--font-body);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.room--fullscreen {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.room-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/fonds/fondNormal_nuit.jpg") no-repeat center center;
+  background-size: cover;
+  opacity: 0.65;
+}
+
+.room-close-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  color: #ddbfaa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.room-close-btn:hover { background: rgba(0,0,0,0.7); color: #fff; }
+
+.room-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 58% 42%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+}
+
+@media (max-width: 860px) {
+  .room-content { grid-template-columns: 1fr; }
+  .room-characters { display: none; }
+}
+
+/* ── Characters (left) ── */
+.room-characters {
+  position: relative;
+  overflow: hidden;
+  animation: roomFadeIn 0.4s var(--ease-standard);
+  border-right: 1px solid rgba(139, 69, 19, 0.35);
+}
+.room-characters-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.character-card {
+  position: absolute;
+  width: min(130px, 13vw);
+  display: grid;
+  grid-template-rows: 24px auto 22px auto;
+  grid-template-areas: "emplacementSpecial" "portrait" "nom" "commentaire";
+  background: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/cadreVide.png") no-repeat center 18px;
+  background-size: contain;
+  align-items: center;
+  justify-items: center;
+  /* Only the properties that actually change (data-place positions):
+     `all` forces compositing/opacity recalcs on every card move. */
+  transition: left 0.3s ease, top 0.3s ease;
+  opacity: 0;
+  animation: roomFadeIn 0.4s var(--ease-standard) forwards;
+}
+.character-card[data-place="0"] { left: 30%; top: 42%; transform: translateX(-50%); }
+.character-card[data-place="1"] { left: 65%; top: 42%; transform: translateX(-50%); }
+.character-card[data-place="2"] { left: 10%; top: 8%; transform: translateX(-50%); }
+.character-card[data-place="3"] { left: 35%; top: 3%; transform: translateX(-50%); }
+.character-card[data-place="4"] { left: 60%; top: 3%; transform: translateX(-50%); }
+.character-card[data-place="5"] { left: 80%; top: 8%; transform: translateX(-50%); }
+.character-card[data-place="6"] { left: 10%; top: 72%; transform: translateX(-50%); }
+.character-card[data-place="7"] { left: 35%; top: 75%; transform: translateX(-50%); }
+.character-card[data-place="8"] { left: 60%; top: 75%; transform: translateX(-50%); }
+.character-card[data-place="9"] { left: 80%; top: 72%; transform: translateX(-50%); }
+
+.character-card:nth-child(1){ animation-delay: 0s; }
+.character-card:nth-child(2){ animation-delay: 0.05s; }
+.character-card:nth-child(3){ animation-delay: 0.10s; }
+.character-card:nth-child(4){ animation-delay: 0.15s; }
+.character-card:nth-child(5){ animation-delay: 0.2s; }
+
+@keyframes roomFadeIn { from { opacity:0 } to { opacity:1 } }
+
+.character-portrait {
+  width: 110px;
+  height: 110px;
+  grid-area: portrait;
+  border: 1px solid #000;
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  text-align: center;
+  font-size: var(--text-md);
+  color: #ddbfaa;
+  font-style: italic;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  background: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadreVide.png") no-repeat top center;
+  background-size: auto 100%;
+  margin-top: 6%;
+  justify-self: center;
+  /* NO filter here: even as a no-op, a filter forces a WebKitGTK compositing
+     layer — bugs 267986/218292: canvas not repainted on resize. */
+}
+.portrait-fallback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700; color: #ddbfaa; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.character-name {
+  font-weight: 700; color: #bcc4d7; text-align: center;
+  font-size: var(--text-xs); text-shadow: 0 0 5px #000;
+  grid-area: nom; z-index: 3;
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.character-last-msg {
+  grid-area: commentaire; color: #bcc4d7; font-size: var(--text-xs);
+  text-align: center; padding: 0 4px; max-width: 150px;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+  -webkit-box-orient: vertical; line-height: 1.3; margin-top: 2px; word-break: break-word;
+}
+.character-last-msg.emote { color: #6cb7ee !important; font-style: italic; font-family: var(--font-fiction); }
+.character-last-msg.chopine { color: #ffd700 !important; font-style: italic; font-family: var(--font-fiction); }
+.character-last-msg.emote.chopine { color: #ffd700 !important; }
+
+/* ── Official RK layering: cadreVide stays the permanent outer frame
+   (.character-card, original background unchanged). cadrePlein shows IN
+   ADDITION inside, on the medallion of occupied cards only. ── */
+.character-card:not(.empty) .character-portrait {
+  background: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadrePlein.png") no-repeat center;
+  background-size: 120px auto;
+}
+/* ── Portrait canvas positioning (original taverne.css adapted) ── */
+.character-portrait .apercu_personnage_rar__affiche {
+  position: absolute;
+  left: -9px;
+  top: -7px;
+  display: block;
+  margin: auto;
+}
+/* Midas mini (AvatarPortrait genereApercuDepuisJSON(json, true)): 135px box
+   recentered in the 110px round medallion. Placed after the __affiche rule
+   (same specificity) to override left/top. */
+.character-portrait .apercu_personnage_rar__mini {
+  position: absolute;
+  width: 135px;
+  height: 135px;
+  overflow: hidden;
+  left: -12px;
+  top: -12px;
+}
+/* ── NO opacity animation on the Midas root: after a DOM move (place
+   change), the animation may not restart under WebKitGTK and the portrait
+   would stay stuck at opacity:0 — canvas present, invisible. ── */
+.own-player .character-portrait,
+.selected .character-portrait {
+  cursor: pointer;
+}
+.own-player .character-portrait:hover,
+.selected .character-portrait:hover {
+  background-size: 140px auto;
+}
+.character-card.empty .character-portrait,
+.empty.selected .character-portrait,
+.character-card.empty.selected .character-portrait {
+  background: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadreVide.png") no-repeat top center;
+  background-size: auto 100%;
+}
+.apercu_personnage_rar {
+  position: relative;
+  display: block;
+}
+.apercu_personnage_rar__mini {
+  width: 135px;
+  height: 135px;
+  overflow: hidden;
+}
+.apercu_personnage_rar__affiche {
+  display: block;
+  margin: auto;
+}
+.apercu_personnage_rar__calque {
+  width: 256px;
+  height: 512px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.apercu_personnage_rar__homme > canvas {
+  left: -70px;
+}
+.apercu_personnage_rar__femme > canvas {
+  left: -75px;
+  top: -25px;
+}
+/* <img> variants: the portrait is shown via img (dataURL, rendered
+   offscreen) instead of a live canvas — same cropping offsets. */
+.apercu_personnage_rar__homme > img.apercu_personnage_rar__calque {
+  left: -70px;
+}
+.apercu_personnage_rar__femme > img.apercu_personnage_rar__calque {
+  left: -75px;
+  top: -25px;
+}
+.apercu_personnage_rar__mini > canvas.apercu_personnage_rar__slotFond {
+  display: none;
+}
+
+/* ── Chat (right) ── */
+.room-chat {
+  display: flex; flex-direction: column;
+  background:
+    url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/lisere.png") left repeat-y,
+    rgba(26, 44, 63, 0.92);
+  box-shadow: -5px 0 20px rgba(0,0,0,0.8);
+  position: relative; overflow: hidden; min-height: 0;
+  animation: roomChatSlideIn 0.4s var(--ease-standard);
+}
+@keyframes roomChatSlideIn { from { transform: translateX(40px); opacity:0 } to { transform: translateX(0); opacity:1 } }
+
+.room-chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, rgba(44,30,21,0.9) 0%, rgba(26,15,10,0.9) 100%);
+  border-bottom: 2px solid #8b4513; flex-shrink: 0;
+}
+.room-chat-header-left { display:flex; align-items:center; gap: var(--space-2); min-width:0; }
+.room-chat-header-left .room-name {
+  font-weight: 700; font-size: var(--text-md); color: #f6905f;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.room-chat-header-actions { display:flex; align-items:center; gap: var(--space-1); }
+
+.room-presence { position: relative; display: inline-flex; align-items: center; }
+.room-presence-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(26, 44, 63, 0.98);
+  border: 1px solid #8b4513;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 140px;
+  max-width: 240px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s var(--ease-standard), transform 0.15s var(--ease-standard), visibility 0.15s;
+  z-index: 50;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.room-presence-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: #8b4513;
+}
+.room-presence:hover .room-presence-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.room-presence-name {
+  font-size: var(--text-xs);
+  color: #f0d6c8;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.room-presence-name:not(:last-child) {
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 3px;
+}
+
+.room-messages {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: var(--space-3) var(--space-4);
+  display: flex; flex-direction: column; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.room-messages::-webkit-scrollbar { width: 8px; }
+.room-messages::-webkit-scrollbar-thumb { border-radius: 10px; background: var(--border); }
+
+.room-date-separator {
+  text-align: center; padding: 6px 0;
+  font-size: var(--text-xs); color: #ddbfaa; font-style: italic; opacity: 0.7;
+}
+
+.room-message {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm); color: #c2c9cf;
+  background: rgba(81,110,147,0.15);
+  border-bottom: 1px solid rgba(0,0,0,0.25);
+  animation: roomMsgFadeIn 0.25s var(--ease-standard) forwards; opacity:0;
+}
+@keyframes roomMsgFadeIn { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
+.room-message.own { background: rgba(81,110,147,0.28); color:#fff; }
+.room-message.emote { background: rgba(81,110,147,0.08); color:#6cb7ee; font-style: italic; font-family: var(--font-fiction); }
+.room-message.emote.chopine { color:#ffd700; }
+.room-message.whisper { background: rgba(180,80,120,0.15); border-left: 3px solid var(--danger-muted); }
+.room-message.whisper .room-msg-username { color:#e879a8; }
+.room-message.system { background: transparent; color:#ddbfaa; font-style: italic; text-align:center; font-size: var(--text-xs); padding: 4px; }
+.room-message.error { background: rgba(217,44,44,0.12); color:#f38ba8; border-left: 3px solid var(--danger); }
+
+.room-msg-header { display:flex; justify-content:space-between; margin-bottom: var(--space-1); }
+.room-msg-username { color:#fff; font-weight:700; font-size: var(--text-xs); }
+.room-msg-timestamp { color: rgba(255,255,255,0.35); font-size: 10px; font-style: italic; }
+.room-msg-content { word-wrap: break-word; line-height: 1.35; font-size: var(--text-sm); }
+
+.room-input-area {
+  flex-shrink: 0;
+  background: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/zoneTchat_repeat.png") repeat-x top;
+  padding: var(--space-3) var(--space-4);
+  box-shadow: 0 -5px 15px rgba(0,0,0,0.4);
+  position: relative;
+}
+.room-input-wrap { position: relative; }
+.room-textarea {
+  width: 100%; height: 72px;
+  background-color: #d8b4a4; border-radius: var(--radius);
+  padding: var(--space-3); padding-right: 50px;
+  border: 2px solid #3c1d0f;
+  box-shadow: inset 0 0 8px rgba(66,39,32,0.4);
+  font-size: var(--text-md); font-family: var(--font-body); color:#2c1e15;
+  resize: none; transition: all 0.2s ease;
+}
+.room-textarea:focus { background-color:#fff; outline:none; }
+.room-textarea::placeholder { font-style: italic; color:#532815; opacity:0.6; }
+.room-send-btn {
+  position: absolute; right: var(--space-2); top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px;
+  background: url("https://lesroyaumes.cdn.oxv.fr/images/ui_bouton_retourBleu_@2X.png") no-repeat center;
+  background-size: 100%;
+  border: 1px solid rgba(0,0,0,0.8); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.2s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.room-send-btn:hover:not(:disabled){ opacity:0.85; }
+.room-send-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+.room-send-btn::after{
+  content:""; width:70%; height:70%;
+  background: url("https://lesroyaumes.cdn.oxv.fr/images/ui_iconeEnvoi_@2X.png") no-repeat center;
+  background-size: 90%;
+}
+.room-char-count { background: rgba(44,30,21,0.85); padding: 4px 16px; font-size: var(--text-xs); color:#d5b4a1; text-align:right; flex-shrink:0; }
+.room-typing-indicator { padding: 4px 16px; font-size: var(--text-sm); color:#b8a090; font-style: italic; background: rgba(30,20,15,0.6); flex-shrink:0; min-height: 24px; }
+.room-scroll-btn {
+  position: absolute; bottom: 90px; right: 20px;
+  background: rgba(79,129,183,0.9); color:#fff; border:none; border-radius: 20px;
+  padding: 6px 14px; font-size: var(--text-xs); cursor:pointer; z-index:5;
+}
+.room-loading { display:flex; align-items:center; justify-content:center; width:100%; height:100%; background:#000; color:#ddbfaa; font-size: var(--text-base); }
+
+.bredouille-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.58);
+  backdrop-filter: blur(2px);
+  animation: bredouilleIn 0.22s var(--ease-standard);
+  cursor: pointer;
+}
+.bredouille-bubble {
+  background: linear-gradient(135deg, rgba(44,30,21,0.98) 0%, rgba(26,15,10,0.98) 100%);
+  border: 1px solid #8b4513;
+  border-radius: 14px;
+  padding: 28px 36px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(221,191,170,0.15);
+  max-width: 560px;
+  width: min(90vw, 560px);
+  animation: bredouilleBubble 0.3s var(--ease-standard);
+}
+.bredouille-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  color: #d5b4a1;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+.bredouille-text {
+  font-family: var(--font-fiction);
+  font-style: italic;
+  font-size: var(--text-lg);
+  color: #f0d6c8;
+  line-height: 1.4;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+}
+.bredouille-hint {
+  margin-top: 10px;
+  font-size: var(--text-xs);
+  color: #a08060;
+  font-style: italic;
+}
+@keyframes bredouilleIn { from { opacity:0 } to { opacity:1 } }
+@keyframes bredouilleBubble { from { opacity:0; transform: translateY(8px) scale(0.98) } to { opacity:1; transform: translateY(0) scale(1) } }
+
+.room-presence { position: relative; display: inline-flex; align-items: center; }
+.room-presence-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(26, 44, 63, 0.98);
+  border: 1px solid #8b4513;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 140px;
+  max-width: 240px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s var(--ease-standard), transform 0.15s var(--ease-standard), visibility 0.15s;
+  z-index: 50;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.room-presence-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: #8b4513;
+}
+.room-presence:hover .room-presence-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.room-presence-name {
+  font-size: var(--text-xs);
+  color: #f0d6c8;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.room-presence-name:not(:last-child) {
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 3px;
+}
+
+.character-card.clickable {
+  cursor: pointer;
+}
+.character-card.clickable:hover {
+  filter: brightness(1.15);
+  transform: translateX(-50%) scale(1.04);
+}
+.character-card.clickable:focus-visible {
+  outline: 2px solid #FFDA1F;
+  outline-offset: 2px;
+}
+.character-card.selected {
+  outline: 2px solid #FFDA1F;
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(255, 218, 31, 0.55);
+  filter: brightness(1.1);
+}
+.character-card.empty.clickable .character-portrait {
+  border-color: rgba(255, 218, 31, 0.55);
+}
+.character-card.empty.clickable:hover .portrait-fallback {
+  color: #FFDA1F;
+}
+
+/* ── 8 places layout : 3 4 2 / 0 1 / 5 6 7 ── */
+.room--places-8 .character-card[data-place="8"],
+.room--places-8 .character-card[data-place="9"] {
+  display: none;
+}
+.room--places-8 .character-card[data-place="0"] { left: 32%; top: 50%; }
+.room--places-8 .character-card[data-place="1"] { left: 68%; top: 50%; }
+.room--places-8 .character-card[data-place="2"] { left: 82%; top: 14%; }
+.room--places-8 .character-card[data-place="3"] { left: 18%; top: 14%; }
+.room--places-8 .character-card[data-place="4"] { left: 50%; top: 6%; }
+.room--places-8 .character-card[data-place="5"] { left: 18%; top: 82%; }
+.room--places-8 .character-card[data-place="6"] { left: 50%; top: 88%; }
+.room--places-8 .character-card[data-place="7"] { left: 82%; top: 82%; }
