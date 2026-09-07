@@ -961,3 +961,170 @@ label.tavern-filter-option {
     cursor: pointer;
   }
 }
+
+/* ── ora-1 step 1: saved accounts (preselect-then-Connect) ── */
+.account-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-picker-label {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+  }
+
+  &.is-picked {
+    border-color: var(--primary);
+    background: var(--primary-muted);
+    box-shadow: 0 0 0 3px var(--primary-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+.account-radio {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.account-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  font-size: var(--text-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    color: var(--danger);
+    background: color-mix(in oklab, var(--danger) 10%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+/* ── ora-1 step 2: session line + recents + actions ── */
+.tavern-session-user {
+  margin: 6px 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.recents {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recents-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.recents-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recent-chip {
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--text);
+    border-color: var(--primary);
+    background: var(--primary-muted);
+  }
+
+  &.is-active {
+    color: var(--text);
+    border-color: var(--primary);
+    background: var(--primary-muted);
+    box-shadow: 0 0 0 3px var(--primary-muted);
+  }
+}
+
+.tavern-select-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tavern-forget {
+  padding: 6px 8px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--danger);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

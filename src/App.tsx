@@ -4,164 +4,218 @@ import { t } from "./lib/i18n";
 import { DEFAULT_TAVERN_ID } from "./lib/config";
 import { useTaverne } from "./lib/hooks/useTaverne";
 import { useBredouille } from "./lib/hooks/useBredouille";
-import LoginForm from "./components/auth/LoginForm";
+import { useRecents } from "./lib/hooks/useRecents";
+import AuthStep from "./components/auth/AuthStep";
+import TavernSelect from "./components/tavern/TavernSelect";
 import ChatRoom from "./components/chat/ChatRoom";
 import type { Tavern } from "./lib/types";
 
+type Phase = "auth" | "tavern" | "room";
+
 export default function App() {
+  const [phase, setPhase] = useState<Phase>("auth");
+  const [accounts, setAccounts] = useState<string[]>([]);
+  const [pickedAccount, setPickedAccount] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
-  const [rememberedLogin, setRememberedLogin] = useState<string | null>(null);
+  const [useAnother, setUseAnother] = useState(false);
   const [taverns, setTaverns] = useState<Tavern[]>([]);
   const [idLieu, setIdLieu] = useState(DEFAULT_TAVERN_ID);
   const [inputMessage, setInputMessage] = useState("");
   const [connecting, setConnecting] = useState(false);
   // Single-flight guard against double-connection (mirrors the official JS
-  // `_initialisationEnCours`: ONE connection, ONE changeSalon). `connecting`
-  // drives the UI, `connectingRef` is the synchronous anti-burst guard
-  // (double-click).
+  // `_initialisationEnCours`). `connecting` drives the UI,
+  // `connectingRef` is the synchronous anti-burst guard (double-click).
   const connectingRef = useRef(false);
 
   const taverne = useTaverne(username, idLieu);
   const bredouille = useBredouille(taverne.isConnected);
+  const { recents, push: pushRecent } = useRecents();
 
-  // Credentials cleared backend-side (BadCredentials) → leave the
-  // "remembered account" state. Returns true if the state was reset.
-  // An unreadable keyring (unavailable) keeps the state as-is.
-  const dropStaleRemembered = async (): Promise<boolean> => {
-    let still: string | null;
+  const refreshAccounts = async (): Promise<string[]> => {
     try {
-      still = await api.getSavedLogin();
+      const list = await api.listAccounts();
+      setAccounts(list);
+      setPickedAccount((prev) => {
+        if (prev !== null && list.includes(prev)) return prev;
+        return list.length > 0 ? (list[0] ?? null) : null;
+      });
+      return list;
     } catch {
-      return false;
+      return accounts;
     }
-    if (still) return false;
-    setRememberedLogin(null);
-    setUsername("");
-    return true;
   };
 
+  // Boot: taverns + accounts in parallel, no auto-login (ora-1).
+  // The user explicitly picks an account (step 1) then a tavern (step 2).
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const list = await api.getTaverns();
+        const [list, saved] = await Promise.all([api.getTaverns(), api.listAccounts()]);
         if (cancelled) return;
         setTaverns(list);
-        const targetId = list.length ? list[0].id : DEFAULT_TAVERN_ID;
-        if (list.length) setIdLieu(targetId);
-        try {
-          const saved = await api.getSavedLogin();
-          if (cancelled) return;
-          if (saved) {
-            setUsername(saved);
-            setRememberedLogin(saved);
-          }
-        } catch {
-          // Ignore prefill failures — stay on silent form.
-        }
-        try {
-          const auto = await api.tryAutoLogin();
-          if (cancelled || auto == null) return;
-          // Remembered session found: stay on the login screen in the
-          // "remembered account" state — the user picks a tavern then enters.
-          setUsername(auto);
-          setRememberedLogin(auto);
-          taverne.setStatus(t("status.loginSuccess"));
-        } catch (err) {
-          // Real failure (credentials rejected → backend cleared, or network).
-          // An unavailable keyring never rejects here: the backend maps it to
-          // Ok(None) (silent return above).
-          await dropStaleRemembered();
-          if (!cancelled) taverne.setError(String(err));
-        }
+        if (list.length > 0 && list[0]) setIdLieu(list[0].id);
+        setAccounts(saved);
+        setPickedAccount(saved.length > 0 ? (saved[0] ?? null) : null);
+        if (saved.length === 0) setUseAnother(true);
       } catch {
-        // getTaverns failed — leave the form visible.
+        // getTaverns failed — leave the auth screen visible.
       }
     })();
     return () => {
       cancelled = true;
     };
-    // Mount-only restore (setters are stable).
+    // Mount-only boot (setters are stable).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Enter the chosen tavern (session already open).
-  // Places are loaded by the useTaverne hook (effect on isConnected).
-  // Single-flight: ignore concurrent calls (double-click, auto-reconnect)
-  // to never open two sockets (double presence / kick 41).
-  const enterTavern = async (id: number) => {
-    if (connectingRef.current || connecting) return;
-    connectingRef.current = true;
-    try {
-      await api.wsConnect(id);
-    } finally {
-      connectingRef.current = false;
-    }
+  const clearRoomState = () => {
+    taverne.setMessages([]);
+    taverne.setPresentUsers([]);
+    taverne.setPlaces(Array(taverne.totalPlaces).fill(null));
+    taverne.setSelectedPlace(null);
+    taverne.setIsConnected(false);
   };
 
-  const handleLogin = async (e: Event) => {
+  // Step 1 (form): login opens the HTTP session only — no wsConnect.
+  // The tavern is chosen in step 2.
+  const handleConnectForm = async (e: Event) => {
     e.preventDefault();
-    // Ignore concurrent submissions (double-click): the synchronous lock
-    // covers the delay before `connecting` (state) propagates.
     if (connectingRef.current || connecting) return;
+    connectingRef.current = true;
     taverne.setError("");
     taverne.setStatus("");
     setConnecting(true);
     taverne.setMessages([]);
     try {
-      const warning = await api.login(username, password, remember);
+      const loginName = username.trim();
+      const warning = await api.login(loginName, password, remember);
       setPassword("");
-      // Remembered state only if persistence is confirmed: if the backend
-      // reports a warning, nothing was stored and "Enter" would immediately
-      // fall back to the full form.
-      setRememberedLogin(remember && warning == null ? username : null);
-      taverne.setStatus(warning ?? t("status.loginSuccess"));
-      await enterTavern(idLieu);
+      setUsername(loginName);
+      setPickedAccount(loginName);
+      await refreshAccounts();
+      setUseAnother(false);
+      taverne.setStatus(warning ?? t("status.sessionOpen", { username: loginName }));
+      setPhase("tavern");
     } catch (err) {
       taverne.setError(String(err));
     } finally {
       setConnecting(false);
+      connectingRef.current = false;
     }
   };
 
-  // "Remembered account" state: passwordless login via the keyring,
-  // then entry into the chosen tavern.
-  const handleEnter = async (e: Event) => {
-    e.preventDefault();
+  // Step 1 (saved): passwordless session for the preselected account.
+  const handleConnectSaved = async () => {
     if (connectingRef.current || connecting) return;
+    if (pickedAccount === null) return;
+    const target = pickedAccount;
+    connectingRef.current = true;
     taverne.setError("");
     taverne.setStatus("");
     setConnecting(true);
-    // Explicit clear like handleLogin: no tavern ID in the frames,
-    // start from an empty conversation before entering.
     taverne.setMessages([]);
     taverne.setPresentUsers([]);
     try {
-      const login = await api.tryAutoLogin();
+      const login = await api.tryAutoLoginFor(target);
       if (login == null) {
-        // No remembered credentials left: back to the full form.
-        setRememberedLogin(null);
-        setUsername("");
+        await refreshAccounts();
         taverne.setError(t("auth.sessionExpired"));
         return;
       }
-      setRememberedLogin(login);
       setUsername(login);
-      taverne.setStatus(t("status.loginSuccess"));
-      await enterTavern(idLieu);
+      setPickedAccount(login);
+      taverne.setStatus(t("status.sessionOpen", { username: login }));
+      setPhase("tavern");
     } catch (err) {
-      // Credentials rejected → the backend cleared them: fall back to the
-      // full form with an expiry hint.
-      if (await dropStaleRemembered()) {
-        taverne.setError(t("auth.sessionExpired"));
-      } else {
-        taverne.setError(String(err));
-      }
+      taverne.setError(String(err));
     } finally {
       setConnecting(false);
+      connectingRef.current = false;
     }
+  };
+
+  const handleRemoveAccount = async (login: string) => {
+    if (connecting) return;
+    try {
+      await api.removeAccount(login);
+      const next = await refreshAccounts();
+      if (pickedAccount === login) {
+        setPickedAccount(next.length > 0 ? (next[0] ?? null) : null);
+        if (next.length === 0) setUseAnother(true);
+      }
+      taverne.setStatus(t("auth.accountRemoved", { username: login }));
+    } catch (err) {
+      taverne.setError(String(err));
+    }
+  };
+
+  // Step 2 — Enter: open the socket, remember the tavern, show the room.
+  // Single-flight: ignore concurrent calls (double-click) to never open
+  // two sockets (double presence / kick 41).
+  const handleEnterTavern = async () => {
+    if (connectingRef.current || connecting) return;
+    connectingRef.current = true;
+    taverne.setError("");
+    setConnecting(true);
+    try {
+      await api.wsConnect(idLieu);
+      pushRecent(idLieu);
+      setPhase("room");
+    } catch (err) {
+      taverne.setError(String(err));
+    } finally {
+      setConnecting(false);
+      connectingRef.current = false;
+    }
+  };
+
+  // Step 2 — Back: cut the session, return to accounts (step 1).
+  const handleBackToAuth = async () => {
+    try {
+      await api.disconnect();
+    } catch {
+      // Session already down — return to auth anyway.
+    }
+    clearRoomState();
+    setPassword("");
+    setUseAnother(accounts.length === 0);
+    taverne.setStatus(t("status.disconnected"));
+    taverne.setError("");
+    setPhase("auth");
+  };
+
+  // Step 2 — Forget: logout removes the current account only, then auth.
+  const handleForgetCurrent = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Best effort — still refresh and leave.
+    }
+    clearRoomState();
+    setUsername("");
+    setPassword("");
+    setRemember(false);
+    await refreshAccounts();
+    setUseAnother(false);
+    taverne.setStatus(t("status.disconnected"));
+    taverne.setError("");
+    setPhase("auth");
+  };
+
+  // Room — Leave: cut the socket only (session stays open), back to taverns.
+  const handleLeaveRoom = async () => {
+    try {
+      await api.wsDisconnect();
+    } catch {
+      // Socket already down — return to taverns anyway.
+    }
+    clearRoomState();
+    taverne.setStatus(t("status.sessionOpen", { username }));
+    setPhase("tavern");
   };
 
   const handleSend = async (e: Event) => {
@@ -189,7 +243,7 @@ export default function App() {
     const text = taverne.messages
       .map((m) => (m.type === "normal" || m.type === "whisper" ? `${m.login}: ${m.content}` : m.content))
       .join("\n");
-    const tavernName = taverns.find((t: Tavern) => t.id === idLieu)?.name ?? String(idLieu);
+    const tavernName = taverns.find((tav: Tavern) => tav.id === idLieu)?.name ?? String(idLieu);
     const full = `${t("chat.copyHeader", { name: tavernName, date: new Date().toLocaleString() })}\n${"=".repeat(48)}\n${text}`;
     try {
       await navigator.clipboard.writeText(full);
@@ -217,41 +271,14 @@ export default function App() {
     }
   };
 
-  // "Leave the tavern": cut the session but keep the remembered credentials
-  // — back to the "remembered account" state.
-  const handleDisconnect = async () => {
-    try {
-      await api.disconnect();
-    } catch {
-      // Session already down — leave to the login screen anyway.
-    }
-    // Explicit clear: the next tavern must never see the previous one's
-    // history/presence/places. (Portraits are keyed by login and validated
-    // by JSON: the cache is kept.)
-    taverne.setMessages([]);
-    taverne.setPresentUsers([]);
-    taverne.setPlaces(Array(taverne.totalPlaces).fill(null));
-    taverne.setSelectedPlace(null);
-    taverne.setIsConnected(false);
-    taverne.setStatus(t("status.disconnected"));
-  };
-
-  // "Sign out" from the remembered state: cut the session AND clear the
-  // credentials — back to the full form to retype them.
-  const handleLogout = async () => {
-    await api.logout();
-    setRememberedLogin(null);
-    setUsername("");
-    setPassword("");
-    setRemember(false);
-    taverne.setStatus(t("status.disconnected"));
-    taverne.setError("");
-  };
-
-  if (!taverne.isConnected) {
+  if (phase !== "room") {
     return (
       <div class="auth-page auth-page--compact">
-        <LoginForm
+        {phase === "auth" ? (
+          <AuthStep
+            accounts={accounts}
+            pickedAccount={pickedAccount}
+            setPickedAccount={setPickedAccount}
             username={username}
             setUsername={setUsername}
             password={password}
@@ -260,17 +287,31 @@ export default function App() {
             setShowPassword={setShowPassword}
             remember={remember}
             setRemember={setRemember}
-            taverns={taverns}
-            idLieu={idLieu}
-            setIdLieu={setIdLieu}
+            useAnother={useAnother}
+            setUseAnother={setUseAnother}
+            loading={connecting}
             error={taverne.error}
             status={taverne.status}
-            loading={connecting}
-            onSubmit={rememberedLogin ? handleEnter : handleLogin}
-            onDisconnect={handleLogout}
-            rememberedLogin={rememberedLogin}
+            onConnectSaved={handleConnectSaved}
+            onConnectForm={handleConnectForm}
+            onRemoveAccount={handleRemoveAccount}
           />
-        </div>
+        ) : (
+          <TavernSelect
+            taverns={taverns}
+            selectedId={idLieu}
+            onSelect={setIdLieu}
+            recents={recents}
+            username={username}
+            loading={connecting}
+            error={taverne.error}
+            status={taverne.status}
+            onEnter={handleEnterTavern}
+            onBack={handleBackToAuth}
+            onForgetCurrent={handleForgetCurrent}
+          />
+        )}
+      </div>
     );
   }
 
@@ -286,10 +327,10 @@ export default function App() {
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
         onSend={handleSend}
-        onDisconnect={handleDisconnect}
+        onDisconnect={handleLeaveRoom}
         onCopy={handleCopy}
         isConnected={taverne.isConnected}
-        tavernName={taverns.find((t: Tavern) => t.id === idLieu)?.name ?? t("tavern.fallback", { id: idLieu })}
+        tavernName={taverns.find((tav: Tavern) => tav.id === idLieu)?.name ?? t("tavern.fallback", { id: idLieu })}
         currentUser={username}
       />
       {bredouille.bredouille && (

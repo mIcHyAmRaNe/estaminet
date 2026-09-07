@@ -23,7 +23,9 @@ export type PlaceId = number; // 0..9
 export type Places = (string | null)[]; // index = place id
 
 // Props — keep minimal, match actual usage in App.tsx
-export interface LoginFormProps {
+
+// Step 1 — pure credential fields (no tavern picker, no remembered block).
+export interface LoginFieldsProps {
   username: string;
   setUsername: (v: string) => void;
   password: string;
@@ -32,15 +34,62 @@ export interface LoginFormProps {
   setShowPassword: (v: boolean) => void;
   remember: boolean;
   setRemember: (v: boolean) => void;
-  taverns: Tavern[];
-  idLieu: number;
-  setIdLieu: (v: number) => void;
+  loading: boolean;
+}
+
+// Step 1 — saved accounts: preselect (radio) then Connect, ✕ per row.
+export interface AccountPickerProps {
+  accounts: string[];
+  pickedAccount: string | null;
+  onPick: (username: string) => void;
+  onRemove: (username: string) => void;
+  onUseAnother: () => void;
+  loading: boolean;
+}
+
+// Step 1 — orchestrates AccountPicker + LoginForm.
+export interface AuthStepProps {
+  accounts: string[];
+  pickedAccount: string | null;
+  setPickedAccount: (v: string | null) => void;
+  username: string;
+  setUsername: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  showPassword: boolean;
+  setShowPassword: (v: boolean) => void;
+  remember: boolean;
+  setRemember: (v: boolean) => void;
+  useAnother: boolean;
+  setUseAnother: (v: boolean) => void;
+  loading: boolean;
   error: string;
   status: string;
+  onConnectSaved: () => void;
+  onConnectForm: (e: Event) => void;
+  onRemoveAccount: (username: string) => void;
+}
+
+// Step 2 — tavern choice with recents above the carousel.
+export interface TavernSelectProps {
+  taverns: Tavern[];
+  selectedId: number;
+  onSelect: (id: number) => void;
+  recents: number[];
+  username: string;
   loading: boolean;
-  onSubmit: (e: Event) => void;
-  onDisconnect?: () => void;
-  rememberedLogin: string | null;
+  error: string;
+  status: string;
+  onEnter: () => void;
+  onBack: () => void;
+  onForgetCurrent?: () => void;
+}
+
+export interface RecentTavernsProps {
+  tavernIds: number[];
+  taverns: Tavern[];
+  selectedId: number;
+  onPick: (id: number) => void;
 }
 
 export interface ChatRoomProps {

@@ -23,6 +23,9 @@ pub enum AppError {
     #[error("Invalid credentials: {0}")]
     BadCredentials(String),
 
+    #[error("Account not found: {0}")]
+    AccountNotFound(String),
+
     #[error("Keyring error: {0}")]
     Keyring(String),
 

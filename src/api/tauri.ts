@@ -14,6 +14,20 @@ export const api = {
 
   getSavedLogin: () => invoke<string | null>("get_saved_login"),
 
+  // ── ora-1 multi-account contract (backend in progress) ──
+  listAccounts: () => invoke<string[]>("list_accounts"),
+
+  saveAccount: (username: string, password: string) =>
+    invoke<void>("save_account", { username, password }),
+
+  removeAccount: (username: string) =>
+    invoke<void>("remove_account", { username }),
+
+  tryAutoLoginFor: (username: string) =>
+    invoke<string | null>("try_auto_login_for", { username }),
+
+  wsDisconnect: () => invoke<void>("ws_disconnect"),
+
   logout: () => invoke<void>("logout"),
 
   disconnect: () => invoke<void>("disconnect"),

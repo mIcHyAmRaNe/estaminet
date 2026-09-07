@@ -20,4 +20,8 @@ pub struct AppState {
     /// JS `_initialisationEnCours`: ONE socket at a time).
     /// `true` for the whole `ws_connect` (old teardown + dial).
     pub ws_connecting: Mutex<bool>,
+    /// Serializes credential store read-modify-write cycles
+    /// (`upsert`/`remove`) so concurrent account operations never
+    /// lose an entry.
+    pub cred_lock: Mutex<()>,
 }

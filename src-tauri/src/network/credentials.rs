@@ -12,6 +12,30 @@ pub struct SavedCreds {
     pub password: String,
 }
 
+/// Dual-format store: new multi-account array plus the legacy single object.
+/// `untagged` tries `Multi` first (any JSON array, including `[]`), then
+/// falls back to `Legacy` (any JSON object). Unknown shapes stay an error —
+/// never silently dropped.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum StoreFormat {
+    Multi(Vec<SavedCreds>),
+    Legacy(Box<SavedCreds>),
+}
+
+fn normalize(format: StoreFormat) -> Vec<SavedCreds> {
+    match format {
+        StoreFormat::Multi(v) => v,
+        StoreFormat::Legacy(b) => vec![*b],
+    }
+}
+
+fn parse_store(s: &str, ctx: &str) -> Result<Vec<SavedCreds>, AppError> {
+    let fmt: StoreFormat = serde_json::from_str(s)
+        .map_err(|e| AppError::Keyring(format!("{ctx} parse: {e}")))?;
+    Ok(normalize(fmt))
+}
+
 /// True when secure storage itself is missing (e.g. Linux without Secret
 /// Service). Such failures must degrade silently — never surface DBus
 /// internals to the UI and never block login. Persistence then falls back to
@@ -47,8 +71,10 @@ fn entry() -> Result<keyring::Entry, AppError> {
     })
 }
 
-pub fn save(creds: &SavedCreds) -> Result<(), AppError> {
-    let json = serde_json::to_string(creds)
+/// Persist the whole multi-account store as a JSON array.
+/// Keyring success purges any stale file fallback.
+pub fn save_all(accounts: &[SavedCreds]) -> Result<(), AppError> {
+    let json = serde_json::to_string(accounts)
         .map_err(|e| AppError::Keyring(format!("keyring serialize: {e}")))?;
     let e = match entry() {
         Ok(e) => e,
@@ -70,7 +96,7 @@ pub fn save(creds: &SavedCreds) -> Result<(), AppError> {
     }
 }
 
-/// Best-effort file fallback for `save` when the keyring backend is missing.
+/// Best-effort file fallback for `save_all` when the keyring backend is missing.
 /// Creates `~/.estaminet/` as needed and restricts the file to 0600 on unix.
 /// Returns `KeyringUnavailable` when the file cannot be written either.
 fn write_file_fallback(json: &str) -> Result<(), AppError> {
@@ -98,16 +124,21 @@ fn write_file_fallback(json: &str) -> Result<(), AppError> {
     }
 }
 
-pub fn load() -> Result<Option<SavedCreds>, AppError> {
+/// Load every saved account. Reads both the new JSON-array format and the
+/// legacy single-object format (keyring first, then the file fallback).
+/// Parse failures are returned as errors — the store is never deleted
+/// on a parse failure.
+pub fn load_all() -> Result<Vec<SavedCreds>, AppError> {
     // Try keyring first.
     let entry_result = entry();
     match entry_result {
         Ok(e) => {
             match e.get_password() {
                 Ok(pw) => {
-                    let creds: SavedCreds = serde_json::from_str(&pw)
-                        .map_err(|e| AppError::Keyring(format!("keyring parse: {e}")))?;
-                    return Ok(Some(creds));
+                    // Stored entry exists: parse it (array or legacy
+                    // object). A corrupt entry is an error, never a delete.
+                    let accounts = parse_store(&pw, "keyring")?;
+                    return Ok(accounts);
                 }
                 Err(keyring::Error::NoEntry) => {
                     // No keyring entry: the fallback file may still hold
@@ -129,19 +160,49 @@ pub fn load() -> Result<Option<SavedCreds>, AppError> {
     if let Some(p) = cred_path() {
         match std::fs::read_to_string(&p) {
             Ok(content) => {
-                let creds: SavedCreds = serde_json::from_str(&content)
-                    .map_err(|e| AppError::Keyring(format!("file parse: {e}")))?;
-                return Ok(Some(creds));
+                let accounts = parse_store(&content, "file")?;
+                return Ok(accounts);
             }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(vec![]),
             Err(e) => return Err(AppError::KeyringUnavailable(format!("file fallback load: {e}"))),
         }
     }
-    Ok(None)
+    Ok(vec![])
+}
+
+/// Insert or replace the entry for `creds.username`, then persist.
+/// Callers must hold `AppState::cred_lock` across this read-modify-write.
+pub fn upsert(creds: &SavedCreds) -> Result<(), AppError> {
+    let mut all = load_all()?;
+    if let Some(existing) = all.iter_mut().find(|c| c.username == creds.username) {
+        *existing = creds.clone();
+    } else {
+        all.push(creds.clone());
+    }
+    save_all(&all)
+}
+
+/// Remove the entry for `username`. Returns `true` when an entry was
+/// removed, `false` when none matched (store untouched).
+/// Callers must hold `AppState::cred_lock` across this read-modify-write.
+pub fn remove(username: &str) -> Result<bool, AppError> {
+    let mut all = load_all()?;
+    let before = all.len();
+    all.retain(|c| c.username != username);
+    if all.len() == before {
+        return Ok(false);
+    }
+    save_all(&all)?;
+    Ok(true)
+}
+
+/// Find one account by username.
+pub fn find(username: &str) -> Result<Option<SavedCreds>, AppError> {
+    Ok(load_all()?.into_iter().find(|c| c.username == username))
 }
 
 /// Idempotent delete — missing entry is Ok; always clears the file fallback too.
-pub fn delete() -> Result<(), AppError> {
+pub fn delete_all() -> Result<(), AppError> {
     // The fallback file must never outlive deletion (ghost credentials).
     if let Some(p) = cred_path() {
         let _ = std::fs::remove_file(&p);
@@ -168,4 +229,26 @@ pub fn delete() -> Result<(), AppError> {
         }
         Err(e) => Err(AppError::Keyring(format!("keyring delete: {e}"))),
     }
+}
+
+/// Deprecated single-account shims (kept for compatibility):
+/// `save` upserts one entry, `load` returns the first entry,
+/// `delete` clears the whole store.
+
+#[deprecated(note = "use upsert() for the multi-account store")]
+#[allow(dead_code)]
+pub fn save(creds: &SavedCreds) -> Result<(), AppError> {
+    upsert(creds)
+}
+
+#[deprecated(note = "use load_all() or find() for the multi-account store")]
+#[allow(dead_code)]
+pub fn load() -> Result<Option<SavedCreds>, AppError> {
+    Ok(load_all()?.into_iter().next())
+}
+
+#[deprecated(note = "use remove() or delete_all() for the multi-account store")]
+#[allow(dead_code)]
+pub fn delete() -> Result<(), AppError> {
+    delete_all()
 }

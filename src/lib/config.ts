@@ -29,6 +29,10 @@ export const BREDOUILLE_MS = 2400;
 // i18n module share a single constant instead of a hardcoded string.
 export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
+// Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
+export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";
+export const RECENTS_MAX = 5;
+
 // Network / UX
 export const SCROLL_THRESHOLD = 100;
 export const ERROR_TTL_MS = 3500;
