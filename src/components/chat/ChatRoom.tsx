@@ -7,7 +7,46 @@ import { useAutoScroll } from "../../lib/hooks/useAutoScroll";
 import { isChopineText } from "../../lib/utils/chat-guards";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
+import TourneeOverlay from "./TourneeOverlay";
+import FatalOverlay, { type FatalKind } from "./FatalOverlay";
+import PlayerMenu from "./PlayerMenu";
 import AvatarPortrait, { clearPortraitCache } from "./AvatarPortrait";
+import tavernierIcon from "../../assets/images/interieurTaverne/ui_icone_tavernier_@2X.png";
+import noblesseIcon from "../../assets/images/interieurTaverne/ui_icone_noblesse_@2X.png";
+import mariesIcon from "../../assets/images/interieurTaverne/ui_icone_maries_@2X.png";
+import pretreIcon from "../../assets/images/interieurTaverne/ui_icone_pretre_@2X.png";
+
+// Lane F1 — tournée générale overlay auto-dismiss (~5s, official: 2.5s actif
+// class + 5s freshness window; the spec asks for ~5s visible).
+const TOURNEE_DISMISS_MS = 5000;
+
+// Lane F2 — reserved-seat status (official Place.js configPlaces): the
+// tavernier / noblesse / mariés / prêtre icons mark the SEAT, not the
+// player — derived from the ground type, never from player payloads
+// (taverneInit / taverneInfosPersonnage carry no status flags).
+// eglise → ['marie', 'cure', 'marie'] (3 seats); taverns/ports/camps →
+// ['tavernier', 'noble'] on seats 0-1, 'normal' elsewhere. Unknown ground
+// (Lieu frame not yet received) → 'normal' (no icon, defensive).
+type SeatReserve = "tavernier" | "noble" | "marie" | "cure" | "normal";
+
+function reserveOf(lieu: string | null | undefined, place: number): SeatReserve {
+  if (!lieu) return "normal";
+  if (lieu.toLowerCase() === "eglise") {
+    if (place === 0 || place === 2) return "marie";
+    if (place === 1) return "cure";
+    return "normal";
+  }
+  if (place === 0) return "tavernier";
+  if (place === 1) return "noble";
+  return "normal";
+}
+
+const RESERVE_BADGE: Record<Exclude<SeatReserve, "normal">, { icon: string; labelKey: string }> = {
+  tavernier: { icon: tavernierIcon, labelKey: "seat.reserveTavernier" },
+  noble: { icon: noblesseIcon, labelKey: "seat.reserveNoble" },
+  marie: { icon: mariesIcon, labelKey: "seat.reserveMarie" },
+  cure: { icon: pretreIcon, labelKey: "seat.reserveCure" },
+};
 
 export default function ChatRoom(props: ChatRoomProps) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -16,11 +55,57 @@ export default function ChatRoom(props: ChatRoomProps) {
   const msgCount = props.messages.length;
   const typingUsers = props.typingUsers ?? [];
 
+  // Footer status bar: presence counter (moved from ChatHeader) + char count.
+  const presenceCount = props.presentUsers.length;
+  const presenceTooltip =
+    props.presentUsers.length > 0
+      ? t("presence.tooltip", { count: presenceCount, s: presenceCount > 1 ? "s" : "", names: props.presentUsers.join(", ") })
+      : props.isConnected
+        ? t("status.online")
+        : t("status.offline");
+
   const [avatarRefresh, setAvatarRefresh] = useState(0);
   const handleRefreshPortraits = () => {
     clearPortraitCache();
     setAvatarRefresh((v) => v + 1);
   };
+
+  // Lane F1 — whisper prefill (official: clicking a name fills "/w login ").
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const handleWhisperTo = (login: string) => {
+    props.setInputMessage(`/w ${login} `);
+    textareaRef.current?.focus();
+  };
+
+  // Lane F1 — tournée overlay auto-dismiss (keyed per event).
+  const tourneeKey = props.tournee ? props.tournee.key : null;
+  useEffect(() => {
+    if (!tourneeKey) return;
+    const timer = setTimeout(() => props.clearTournee?.(), TOURNEE_DISMISS_MS);
+    return () => clearTimeout(timer);
+    // Re-armed per tournée event; clearTournee is a stable hook setter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourneeKey]);
+
+  const showPlayerMenu = !!props.onOfferDrink;
+
+  // Lane F3 — church mode (lieu === 'eglise'): the official client hides
+  // ALL drink features (MenuPopup drink row, PlayerMenu offer entry,
+  // header consent toggle). Menus + tournée keep working.
+  const isChurch = (props.lieu ?? "").trim().toLowerCase() === "eglise";
+
+  // Lane F3 — fatal overlay priority: kick > ban > refresh request.
+  const fatalKind: FatalKind | null = props.kicked
+    ? "kicked"
+    : props.banned
+      ? "banned"
+      : props.needsRefresh
+        ? "refresh"
+        : null;
+  // Lane F3 — refresh path: window.location.reload(), mirroring official
+  // onMAJTaverne. (ChatHeader's refresh button only clears the portrait
+  // cache — not a real reconnect — so it cannot serve here.)
+  const handleRefreshPage = () => window.location.reload();
 
   // Typing emit: start on first non-empty input, stop 4s after the last
   // keystroke, immediately on clear/send/unmount. Every backend call is
@@ -135,6 +220,25 @@ export default function ChatRoom(props: ChatRoomProps) {
     standingBase.unshift(curRaw.charAt(0).toUpperCase() + curRaw.slice(1));
   }
   const standing = hasPlaced ? standingBase.filter((u) => !placedKeys.has(u.toLowerCase())) : [];
+  // Lane F2 — zoneQuiEcrit (official .taverne_zoneQuiEcrit): text near the
+  // textarea while OTHER players compose (self already excluded by the
+  // hook). Typing keys are lowercase → map back to display names.
+  const typingDisplay = (() => {
+    const out: string[] = [];
+    for (const k of typingUsers) {
+      const disp = baseList.find((u) => u.toLowerCase() === k) ?? (k.charAt(0).toUpperCase() + k.slice(1));
+      if (!out.some((d) => d.toLowerCase() === disp.toLowerCase())) out.push(disp);
+    }
+    return out;
+  })();
+  const typingText =
+    typingDisplay.length === 1
+      ? t("chat.typingOne", { user: typingDisplay[0] ?? "" })
+      : typingDisplay.length === 2
+        ? t("chat.typingTwo", { a: typingDisplay[0] ?? "", b: typingDisplay[1] ?? "" })
+        : typingDisplay.length > 2
+          ? t("chat.typingMany", { n: typingDisplay.length })
+          : null;
   const getOccupant = (place: number): string | null => {
     if (hasPlaced && props.places) return props.places[place] ?? null;
     return occupied ? (occupied[place] ?? null) : null;
@@ -174,6 +278,10 @@ export default function ChatRoom(props: ChatRoomProps) {
               const isOwn = !!name && !!currentLower && name.toLowerCase() === currentLower;
               const isEmpty = !name;
               const clickable = isEmpty && !!props.onChangePlace;
+              // Lane F2 — reserved-seat badge (official iconeTavernier /
+              // iconeNoblesse / iconeMarie / iconePretre on the place).
+              const reserve = reserveOf(props.lieu, place);
+              const badge = reserve !== "normal" ? RESERVE_BADGE[reserve] : null;
               if (name) {
                 const nameLower = name.toLowerCase();
                 const last = [...props.messages].reverse().find((m) => (m.login ?? "").toLowerCase() === nameLower);
@@ -187,15 +295,20 @@ export default function ChatRoom(props: ChatRoomProps) {
                     data-place={String(place)}
                     title={isOwn ? t("seat.own") : name}
                   >
+                    {badge && (
+                      <img class="place-status-icon" src={badge.icon} alt="" title={t(badge.labelKey)} />
+                    )}
                     <div class="character-portrait">
                       <AvatarPortrait login={name} />
                     </div>
-                    <span class="character-name" title={name}>{name}</span>
-                    <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
+                    <span class="character-name" title={name}>{name}</span>                    <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
                       {isTyping ? (
                         <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
                       ) : last ? last.content.slice(0, 56) : "—"}
                     </span>
+                    {showPlayerMenu && !isOwn && props.onOfferDrink && (
+                      <PlayerMenu login={name} onOfferDrink={props.onOfferDrink} onWhisper={handleWhisperTo} hideDrink={isChurch} targetAcceptsAlcool={props.alcoolByLogin?.[name.toLowerCase()] ?? null} onKick={props.onKickPlayer} onBan={props.onBanPlayer} onUnban={props.onUnbanPlayer} />
+                    )}
                   </div>
                 );
               }
@@ -210,6 +323,9 @@ export default function ChatRoom(props: ChatRoomProps) {
                   tabIndex={clickable ? 0 : undefined}
                   onKeyDown={clickable ? (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") handlePlaceClick(place); } : undefined}
                 >
+                  {badge && (
+                    <img class="place-status-icon" src={badge.icon} alt="" title={t(badge.labelKey)} />
+                  )}
                   <div class="character-portrait"><span class="portrait-fallback">+</span></div>
                   <span class="character-name">{t("seat.free")}</span>
                   <span class="character-last-msg">—</span>
@@ -246,6 +362,9 @@ export default function ChatRoom(props: ChatRoomProps) {
                           <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
                         ) : last ? last.content.slice(0, 56) : "—"}
                       </span>
+                      {showPlayerMenu && !isOwn && props.onOfferDrink && (
+                        <PlayerMenu login={name} onOfferDrink={props.onOfferDrink} onWhisper={handleWhisperTo} hideDrink={isChurch} targetAcceptsAlcool={props.alcoolByLogin?.[name.toLowerCase()] ?? null} onKick={props.onKickPlayer} onBan={props.onBanPlayer} onUnban={props.onUnbanPlayer} />
+                      )}
                     </div>
                   );
                 })}
@@ -258,15 +377,23 @@ export default function ChatRoom(props: ChatRoomProps) {
           <ChatHeader
             tavernName={props.tavernName}
             isConnected={props.isConnected}
-            messageCount={msgCount}
-            presentUsers={props.presentUsers}
             onDisconnect={props.onDisconnect}
             onCopy={props.onCopy}
             onRefreshPortraits={handleRefreshPortraits}
+            ecus={props.ecus}
+            ecusPulse={props.ecusPulse}
+            menus={props.menus}
+            onOrderMenu={props.onOrderMenu}
+            onOrderDrink={props.onOrderDrink}
+            onBuyTournee={props.onBuyTournee}
+            lieu={props.lieu}
+            alcoolRate={props.alcoolRate}
+            accepteAlcool={props.accepteAlcool}
+            onToggleAlcool={props.onToggleAlcool}
           />
 
           <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <MessageList messages={props.messages} listRef={listRef} onScroll={handleScroll} />
+            <MessageList messages={props.messages} listRef={listRef} onScroll={handleScroll} players={baseList} />
             {showScrollBtn && (
               <button class="room-scroll-btn" onClick={scrollToBottom}>
                 {pendingCount > 0
@@ -277,33 +404,63 @@ export default function ChatRoom(props: ChatRoomProps) {
           </div>
 
           <div class="room-input-area">
+            {/* Lane F2 — zoneQuiEcrit (official .taverne_zoneQuiEcrit). */}
+            {typingText && (
+              <div class="zone-qui-ecrit" role="status" aria-live="polite">{typingText}</div>
+            )}
+            {/* Lane F3 — flood mute (official onBanFlood): input locked ~30s. */}
+            {props.floodMuted && (
+              <div class="tavern-mute" role="status" aria-live="polite">{t("tavern.floodMute")}</div>
+            )}
             <div class="room-input-wrap" style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
               <textarea
                 class="room-textarea"
+                ref={textareaRef}
                 value={props.inputMessage}
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={t("chat.placeholder")}
                 maxlength={500}
-                disabled={!props.isConnected ? true : undefined}
+                disabled={!props.isConnected || props.floodMuted ? true : undefined}
                 rows={2}
                 style={{ flex: 1 }}
               ></textarea>
               <button
                 class="room-send-btn"
                 onClick={handleSendWrapper}
-                disabled={!props.inputMessage.trim() || !props.isConnected}
+                disabled={!props.inputMessage.trim() || !props.isConnected || props.floodMuted}
                 aria-label={t("chat.send")}
               />
             </div>
           </div>
-          <div class="room-char-count">
-            <span style={{ fontSize: "var(--text-xs)", background: "rgba(44,30,21,0.85)", padding: "4px 16px", borderRadius: "var(--radius-sm)", color: "#d5b4a1", fontWeight: 600 }}>
+          <div class="room-status-bar">
+            <span
+              class={`room-presence${props.isConnected ? " is-online" : " is-offline"}`}
+              title={presenceTooltip}
+            >
+              ● {props.isConnected ? t("presence.online") : t("presence.offline")} · {presenceCount}
+              {props.presentUsers.length > 0 && (
+                <span class="room-presence-tooltip" role="tooltip">
+                  {props.presentUsers.map((n) => (
+                    <span key={n} class="room-presence-name">{n}</span>
+                  ))}
+                </span>
+              )}
+            </span>
+            <span class="room-status-count">
               {props.inputMessage.length}/500 · {t("chat.messageCount", { n: msgCount, s: msgCount !== 1 ? "s" : "" })}
             </span>
           </div>
         </div>
       </div>
+      {/* Lane F1 — tournée générale overlay (auto-dismissed after ~5s). */}
+      {props.tournee && (
+        <TourneeOverlay login={props.tournee.login} onClose={() => props.clearTournee?.()} />
+      )}
+      {/* Lane F3 — fatal blocking overlay (kick / ban / refresh request). */}
+      {fatalKind && (
+        <FatalOverlay kind={fatalKind} onDisconnect={props.onDisconnect} onRefresh={handleRefreshPage} />
+      )}
     </div>
   );
 }

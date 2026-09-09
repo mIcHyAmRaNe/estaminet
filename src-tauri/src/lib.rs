@@ -34,6 +34,12 @@ pub fn run() {
             chat::ws_typing_start,
             chat::ws_typing_stop,
             chat::change_place,
+            chat::taverne_offre_verre,
+            chat::taverne_tournee_generale,
+            chat::taverne_accepte_alcool,
+            chat::taverne_kick,
+            chat::taverne_ban,
+            chat::taverne_unban,
             logs::save_chat_log,
             logs::get_log_dir,
             logs::get_full_log

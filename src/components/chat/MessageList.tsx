@@ -3,14 +3,22 @@ import { ArrowRight, ArrowExit, Alert, WhisperIcon, ServiceBell } from "../../li
 import { computeMessageUnits } from "../../lib/utils/message-utils";
 import { isChopine } from "../../lib/utils/chat-guards";
 import { t } from "../../lib/i18n";
+import LinkifiedText from "./LinkifiedText";
+import choppeMini from "../../assets/images/interieurTaverne/iconeMini_choppe.png";
+import menuMini from "../../assets/images/interieurTaverne/iconeMini_menu.png";
+import tourneeMini from "../../assets/images/interieurTaverne/iconeMini_tourneeGenerale.png";
 
 interface Props {
   messages: ChatMessage[];
   listRef: { current: HTMLDivElement | null };
   onScroll: () => void;
+  // Lane F2 — lienPerso: other players' display logins for name linkification.
+  players: string[];
 }
 
-export default function MessageList({ messages, listRef, onScroll }: Props) {
+export default function MessageList({ messages, listRef, onScroll, players }: Props) {
+  // Memo key for LinkifiedText (array identity changes every render).
+  const playersKey = players.join("\n").toLowerCase();
   if (messages.length === 0) {
     return (
       <div class="room-messages" role="log" aria-live="polite" ref={listRef} onScroll={onScroll}>
@@ -53,7 +61,7 @@ export default function MessageList({ messages, listRef, onScroll }: Props) {
                   {isExit && <ArrowExit size={14} />}
                   {chopine && !isEntry && !isExit && <ServiceBell size={14} />}
                   {isEntry || isExit || chopine ? " " : null}
-                  {text}
+                  <LinkifiedText text={text} players={players} playersKey={playersKey} skipLogin={msg.login} />
                 </div>
               </div>
             );
@@ -62,7 +70,9 @@ export default function MessageList({ messages, listRef, onScroll }: Props) {
           if (msg.type === "system") {
             return (
               <div key={msg.id} class="room-message system">
-                <div class="room-msg-content">{msg.content}</div>
+                <div class="room-msg-content">
+                  <LinkifiedText text={msg.content} players={players} playersKey={playersKey} skipLogin={msg.login} />
+                </div>
               </div>
             );
           }
@@ -71,7 +81,22 @@ export default function MessageList({ messages, listRef, onScroll }: Props) {
             return (
               <div key={msg.id} class="room-message error">
                 <div class="room-msg-content" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Alert size={14} /> {msg.content}
+                  <Alert size={14} /> <LinkifiedText text={msg.content} players={players} playersKey={playersKey} skipLogin={msg.login} />
+                </div>
+              </div>
+            );
+          }
+
+          // Lane F1 — social/economy lines (drink offer / self drink, ordered
+          // menu, general round) with their official mini icons.
+          if (msg.type === "drink" || msg.type === "meal" || msg.type === "tournee") {
+            const icon = msg.type === "drink" ? choppeMini : msg.type === "meal" ? menuMini : tourneeMini;
+            const cls = `room-message social social-${msg.type}`;
+            return (
+              <div key={msg.id} class={cls}>
+                <div class="room-msg-content" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <img class="room-msg-mini-icon" src={icon} alt="" />
+                  <LinkifiedText text={msg.content} players={players} playersKey={playersKey} skipLogin={msg.login} />
                 </div>
               </div>
             );
@@ -92,7 +117,9 @@ export default function MessageList({ messages, listRef, onScroll }: Props) {
                   </span>
                   <span class="room-msg-timestamp">{new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
-                <div class="room-msg-content">{whisperContent}</div>
+                <div class="room-msg-content">
+                  <LinkifiedText text={whisperContent} players={players} playersKey={playersKey} skipLogin={msg.login} />
+                </div>
               </div>
             );
           }
@@ -111,7 +138,7 @@ export default function MessageList({ messages, listRef, onScroll }: Props) {
             </div>
             {msgs.map((m) => (
               <div key={m.id} class="room-msg-content" style={{ marginTop: 3 }}>
-                {m.content}
+                <LinkifiedText text={m.content} players={players} playersKey={playersKey} skipLogin={m.login} />
               </div>
             ))}
           </div>

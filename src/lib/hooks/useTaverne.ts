@@ -3,13 +3,14 @@ import { listen } from "@tauri-apps/api/event";
 import { api } from "../../api/tauri";
 import { t } from "../i18n";
 import { playMessageSound } from "../utils/sound";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, TavernMenus, TavernMenuItem, TourneeInfo, EcusPulse } from "../types";
 import {
   PLACE_RESERVED_DEFAULT,
   AUTO_QUIET_MS,
   AUTO_MAX_MS,
   AUTO_MAX_ATTEMPTS,
   ERROR_TTL_MS,
+  FLOOD_MUTE_MS,
   MSG_HISTORY_LIMIT,
   WS_RECONNECT_DELAY_MS,
   WS_CLOSE_VOLUNTARY,
@@ -39,8 +40,7 @@ function isValidLogin(login: string): boolean {
 // and the seat was treated as empty.
 const PLACE_LOGIN_RE = /^[\p{L}0-9_\-]+$/u;
 
-function extractPlaceIndex(o: Record<string, unknown>): number | null {
-  const candidates = [o.place, o.idPlace, o.position];
+function extractPlaceIndex(o: Record<string, unknown>): number | null {  const candidates = [o.place, o.idPlace, o.position];
   for (const c of candidates) {
     if (typeof c === "number" && Number.isInteger(c) && c >= 0 && c < 20) return c;
     if (typeof c === "string" && c.trim() !== "") {
@@ -54,6 +54,99 @@ function extractPlaceIndex(o: Record<string, unknown>): number | null {
 const WHISPER_DEDUP_MS = 10000;
 const RECONNECT_MAX_ATTEMPTS = 5;
 const RECONNECT_MAX_DELAY_MS = 10000;
+const ECUS_PULSE_MS = 2500; // matches the official ecus_moins flash duration
+
+// Lane F1 — numeric payload field (server sometimes sends numbers as strings).
+function numField(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v.trim());
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+// Lane F3 — boolean-ish payload field (accepteAlcool arrives as boolean,
+// sometimes as 0/1 or "0"/"1"). Null when unrecognised (leave state alone).
+function boolField(v: unknown): boolean | null {
+  if (v === true || v === 1 || v === "1" || v === "true") return true;
+  if (v === false || v === 0 || v === "0" || v === "false") return false;
+  return null;
+}
+
+// Lane F1 — taverneMajMenus item: { nom, prix (centimes), ingredients: item ids }.
+// Ingredient ids are numeric (resolved server-side via getNomItem, which we
+// don't have) — rendered as-is when numeric, verbatim when already strings.
+function parseTavernMenuItem(raw: unknown, id: number): TavernMenuItem | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  if (typeof o.nom !== "string" || !o.nom) return null;
+  const prix = numField(o.prix);
+  if (prix === null) return null;
+  const ingredients: string[] = [];
+  if (Array.isArray(o.ingredients)) {
+    for (const ing of o.ingredients) {
+      if (typeof ing === "number" && ing > 0) ingredients.push(String(ing));
+      else if (typeof ing === "string" && ing) ingredients.push(ing);
+    }
+  }
+  return { id, nom: o.nom, prix, ingredients };
+}
+
+// Lane F1 — taverneMajMenus(infos) with
+//   infos = { menuBoisson?: { prix }, menu0?: {...}, menu1?: {...} }.
+function parseTavernMenus(infos: Record<string, unknown>): TavernMenus {
+  const plats: TavernMenuItem[] = [];
+  const m0 = parseTavernMenuItem(infos.menu0, 0);
+  if (m0) plats.push(m0);
+  const m1 = parseTavernMenuItem(infos.menu1, 1);
+  if (m1) plats.push(m1);
+  let boissonPrix: number | null = null;
+  const b = infos.menuBoisson;
+  if (b && typeof b === "object" && !Array.isArray(b)) {
+    boissonPrix = numField((b as Record<string, unknown>).prix);
+  }
+  return { plats, boissonPrix };
+}
+
+// Lane F1 — complete taverneErreur mapping (official chatTaverne.js switch).
+// PlaceReserve / PlaceDejaPrise are handled by the caller (seat retry logic).
+function mapTaverneError(err: unknown, parametre: unknown, selfDisp: string): string {
+  switch (err) {
+    case "MenuVide":
+      return t("tavernErr.emptyPlate");
+    case "PasAssezArgent":
+      return t("tavernErr.notEnoughMoney");
+    case "TropRapideConsoAlcool":
+      return t("tavernErr.tooFastAlcohol");
+    case "MenuEpuise":
+      return t("tavernErr.ingredientMissing", { ingredient: String(parametre ?? "?") });
+    case "PersonnageIntrouvable":
+      return t("tavernErr.personNotFound");
+    case "PersonnageNonbanni":
+      return t("tavernErr.personNotBanned");
+    case "PasAutoKick":
+      return t("tavernErr.noSelfKick");
+    case "PasAutoBan":
+      return t("tavernErr.noSelfBan");
+    case "RefuseAlcool": {
+      const who = typeof parametre === "string" && parametre.trim() ? displayLogin(parametre) : null;
+      return who
+        ? t("tavernErr.refusesAlcohol", { user: who })
+        : t("tavernErr.refusesAlcoholGeneric");
+    }
+    case "PersonneNeBoitIci":
+      return t("tavernErr.nobodyDrinks");
+    case "PlusDePlace":
+      return t("tavernErr.noRoom");
+    case "BadCommand":
+      return t("tavernErr.badCommand");
+    case "CommandeMenuDejaMange":
+      return t("tavernErr.menuAlreadyEaten", { user: selfDisp });
+    default:
+      return t("error.generic", { err: String(err) });
+  }
+}
 
 export function useTaverne(username: string, idLieu: number) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -144,6 +237,7 @@ export function useTaverne(username: string, idLieu: number) {
     presentKeysRef.current.clear();
     setTypingUsers([]);
     enteredSelfRef.current = false;
+    setLieu(null);
     whisperBubbleSeenRef.current.clear();
     whisperNoticeRef.current.clear();
     // Reset place without breaking auto-seat: the pending flag is re-armed
@@ -196,6 +290,115 @@ export function useTaverne(username: string, idLieu: number) {
 
   // Typing reception: lowercase logins currently composing (self excluded).
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  // Lane F2 — tavern ground type (`Lieu` from the NombrePlaces ws frame,
+  // e.g. "eglise"): drives the reserved-seat status icons in ChatRoom.
+  // Null until the first frame arrives (idLieu change resets it).
+  const [lieu, setLieu] = useState<string | null>(null);
+
+  // Lane F1 — social/economy state.
+  const [menus, setMenus] = useState<TavernMenus>({ plats: [], boissonPrix: null });
+  // Écus balance (argent centimes / 100). Authoritative source is
+  // taverneMajPerso infos.argent (taverneInit carries no purse in the
+  // official bundle — read defensively there too). Null = unknown yet.
+  const [ecus, setEcus] = useState<number | null>(null);
+  const [ecusPulse, setEcusPulse] = useState<EcusPulse | null>(null);
+  // Drunkenness level (taverneChangeTauxAlcool + taverneMajPerso infos.alcool).
+  // Official bundle scale is ~0..20 (blurWithAlcool: effect >= 10, cap 20),
+  // NOT 0..1 — the header maps it to a percent (rate / 20).
+  const [alcoolRate, setAlcoolRate] = useState<number | null>(null);
+  // Lane F3 — alcohol consent (official checkbox #chatMenuInputAccepteAlcool):
+  // self state from taverneInit / taverneMajPerso infos.accepteAlcool +
+  // taverneAccepteAlcool broadcast when it concerns us. Null = unknown yet.
+  const [accepteAlcool, setAccepteAlcool] = useState<boolean | null>(null);
+  // Tisane rules: per-player alcohol consent (keys = lowercased login).
+  // Filled from taverneAccepteAlcool broadcasts (self + others); a missing
+  // key means unknown → assume accepts (tisane labels + écus guards).
+  const [alcoolByLogin, setAlcoolByLogin] = useState<Record<string, boolean>>({});
+  // Ref mirrors for the single-flight socket handler (state is stale in its
+  // closure — same pattern as ecusRef). Updated synchronously with the state.
+  const alcoolByLoginRef = useRef<Record<string, boolean>>({});
+  const accepteAlcoolRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    accepteAlcoolRef.current = accepteAlcool;
+  }, [accepteAlcool]);
+  // Tournée générale overlay payload — auto-dismissed by the view (~5s).
+  const [tournee, setTournee] = useState<TourneeInfo | null>(null);
+  // Fatal moderation flags (taverneKick / taverneBan) — rendered as blocking
+  // overlays by the view (Lane F3). taverneBanFlood is NOT fatal (official
+  // onBanFlood: 30s input mute) → floodMuted instead.
+  const [kicked, setKicked] = useState(false);
+  const [banned, setBanned] = useState(false);
+  // Lane F3 — page-refresh request (taverneRafraichirPage; official
+  // onMAJTaverne = location.reload): blocking overlay with a user-gesture
+  // "Rafraîchir" button instead of reloading blindly.
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  // Lane F3 — flood mute (taverneBanFlood): chat input disabled ~30s.
+  const [floodMuted, setFloodMuted] = useState(false);
+  const floodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ecusRef = useRef<number | null>(null);
+  const ecusPulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashEcus = (dir: "down" | "up") => {
+    if (ecusPulseTimer.current) clearTimeout(ecusPulseTimer.current);
+    setEcusPulse({ dir, key: Date.now() });
+    ecusPulseTimer.current = setTimeout(() => setEcusPulse(null), ECUS_PULSE_MS);
+  };
+
+  const setEcusFromCentimes = (centimes: number) => {
+    const next = centimes / 100;
+    const prev = ecusRef.current;
+    ecusRef.current = next;
+    setEcus(next);
+    if (prev !== null && next !== prev) flashEcus(next < prev ? "down" : "up");
+  };
+
+  // Optimistic purse decrement on self-paid spends (corrected afterwards
+  // by the authoritative taverneMajPerso). No-op while ecus is unknown.
+  const spendEcus = (prixCentimes: number | null) => {
+    if (prixCentimes === null || !(prixCentimes > 0)) return;
+    const prev = ecusRef.current;
+    if (prev === null) return;
+    const next = prev - prixCentimes / 100;
+    ecusRef.current = next;
+    setEcus(next);
+    flashEcus("down");
+  };
+
+  const clearTournee = () => setTournee(null);
+
+  const clearSocialState = () => {
+    setMenus({ plats: [], boissonPrix: null });
+    setEcus(null);
+    ecusRef.current = null;
+    setEcusPulse(null);
+    if (ecusPulseTimer.current) {
+      clearTimeout(ecusPulseTimer.current);
+      ecusPulseTimer.current = null;
+    }
+    setAlcoolRate(null);
+    setAccepteAlcool(null);
+    accepteAlcoolRef.current = null;
+    setAlcoolByLogin({});
+    alcoolByLoginRef.current = {};
+    setTournee(null);
+    setKicked(false);
+    setBanned(false);
+    setNeedsRefresh(false);
+    setFloodMuted(false);
+    if (floodTimer.current) {
+      clearTimeout(floodTimer.current);
+      floodTimer.current = null;
+    }
+  };
+
+  useEffect(() => {
+    // Lane F1 — per-tavern social/economy reset (menus/ecus/tournee/flags).
+    // Separate from the main idLieu clear above (declared after the helpers).
+    clearSocialState();
+    // Runs on tavern change only; the helper uses refs + stable setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idLieu]);
 
   const addTyping = (login: string) => {
     const key = loginKey(login);
@@ -234,6 +437,12 @@ export function useTaverne(username: string, idLieu: number) {
           const v = data[i] as Record<string, unknown>;
           if (v && typeof v === "object" && "NombrePlaces" in v) {
             const n = (v as { Lieu?: string; NombrePlaces: number }).Lieu === "eglise" ? 3 : Number((v as { NombrePlaces: number }).NombrePlaces);
+            // Lane F2 — capture the ground type for the reserved-seat icons.
+            const rawLieu = (v as { Lieu?: unknown }).Lieu;
+            if (typeof rawLieu === "string" && rawLieu.trim()) {
+              const nextLieu = rawLieu.trim();
+              setLieu((prev) => (prev === nextLieu ? prev : nextLieu));
+            }
             if ((PLACES_ALLOWED as readonly number[]).includes(n) && n !== totalPlacesRef.current) {
               setTotalPlaces(n);
               setPlaces((prev) => {
@@ -565,11 +774,21 @@ export function useTaverne(username: string, idLieu: number) {
           // o.position) → fill places[] + presentUsers without overriding
           // places already known via ChangePlace (merge: only empty slots
           // are filled, an already-placed login is never moved).
+          // Lane F1 — defensive purse read (official taverneInit carries no
+          // argent; the authoritative source is taverneMajPerso).
           const placements: Array<{ disp: string; key: string; idx: number }> = [];
           for (let i = 1; i < data.length; i++) {
             const v = data[i];
             if (v && typeof v === "object" && !Array.isArray(v)) {
               const o = v as Record<string, unknown>;
+              const argentInit = numField(o.argent);
+              if (argentInit !== null) setEcusFromCentimes(argentInit);
+              // Lane F3 — self consent + drunkenness (official onInitTaverne:
+              // setAccepteAlcool from infosJoueur; alcool mirrors MajPerso).
+              const alcoolInit = numField(o.alcool);
+              if (alcoolInit !== null) setAlcoolRate(alcoolInit);
+              const aaInit = boolField(o.accepteAlcool);
+              if (aaInit !== null) setAccepteAlcool(aaInit);
               if (typeof o.login === "string" && isValidLogin(o.login as string)) {
                 const rawLogin = o.login as string;
                 addPresent(rawLogin);
@@ -681,6 +900,154 @@ export function useTaverne(username: string, idLieu: number) {
               created_at: nowIso,
             };
           }
+        } else if (eventName === "taverneMajMenus") {
+          // Lane F1 — 42["taverneMajMenus", infos] with
+          //   infos = { menuBoisson?: { prix }, menu0?: {...}, menu1?: {...} }.
+          const infos = data[1];
+          if (infos && typeof infos === "object" && !Array.isArray(infos)) {
+            setMenus(parseTavernMenus(infos as Record<string, unknown>));
+          }
+          return;
+        } else if (eventName === "taverneMajPerso") {
+          // Lane F1 — authoritative purse update (argent in centimes).
+          // This is the écus source (taverneInit carries no purse).
+          // Lane F3 — also the alcool + accepteAlcool source (official
+          // onMaJPersonnage: setArgent/setAccepteAlcool/setAlcool/blur).
+          const infos = data[1];
+          if (infos && typeof infos === "object" && !Array.isArray(infos)) {
+            const o = infos as Record<string, unknown>;
+            const argent = numField(o.argent);
+            if (argent !== null) setEcusFromCentimes(argent);
+            const alcool = numField(o.alcool);
+            if (alcool !== null) setAlcoolRate(alcool);
+            const aa = boolField(o.accepteAlcool);
+            if (aa !== null) setAccepteAlcool(aa);
+          }
+          return;
+        } else if (eventName === "taverneChangeTauxAlcool") {
+          // Lane F1 — 42["taverneChangeTauxAlcool", alcool]: state only.
+          const rate = numField(data[1]);
+          if (rate !== null) setAlcoolRate(rate);
+          return;
+        } else if (eventName === "taverneMangeMenu") {
+          // Lane F1 — 42["taverneMangeMenu", date, id, login, nomMenu, prix].
+          // nomMenu == "alcool" → self-poured drink, else ordered menu item.
+          const login = data[3];
+          if (typeof login !== "string" || !isValidLogin(login)) return;
+          addPresent(login);
+          const nomMenu = typeof data[4] === "string" ? data[4] : "";
+          const prix = numField(data[5]);
+          const selfLowerMeal = loginKey(usernameRef.current);
+          // Tisane rules: a self-poured drink is free when self refuses
+          // alcohol (tisane); plats always charge. The authoritative
+          // taverneMajPerso corrects the balance afterwards.
+          if (!!selfLowerMeal && loginKey(login) === selfLowerMeal) {
+            const selfRefuses = accepteAlcoolRef.current === false;
+            if (!(nomMenu === "alcool" && selfRefuses)) spendEcus(prix);
+          }
+          if (nomMenu === "alcool") {
+            newMsg = { id: crypto.randomUUID(), type: "drink", login: displayLogin(login), content: t("tavern.selfDrink", { user: displayLogin(login) }), timestamp: nowTime, created_at: nowIso };
+          } else {
+            newMsg = { id: crypto.randomUUID(), type: "meal", login: displayLogin(login), content: t("tavern.orderMenu", { user: displayLogin(login), menu: nomMenu || "?" }), timestamp: nowTime, created_at: nowIso };
+          }
+        } else if (eventName === "taverneOffreVerre" || eventName === "taverneOffreTisane") {
+          // Lane F1 — 42["taverneOffreVerre", date, id, login, loginCible, nomMenu, prix]
+          // (taverneOffreTisane: same shape, alcohol declined).
+          const login = data[3];
+          const cible = data[4];
+          if (typeof login !== "string" || typeof cible !== "string") return;
+          if (!isValidLogin(login) || !isValidLogin(cible)) return;
+          addPresent(login);
+          addPresent(cible);
+          const prix = numField(data[6]);
+          const selfLowerOffer = loginKey(usernameRef.current);
+          // Tisane rules: a tisane offer is free — never decrement. A verre
+          // offer decrements (price known from the event, corrected later by
+          // the authoritative taverneMajPerso), unless the target is known to
+          // refuse (defensive: the server answers taverneOffreTisane then).
+          const tisane = eventName === "taverneOffreTisane";
+          if (!!selfLowerOffer && loginKey(login) === selfLowerOffer && !tisane) {
+            const targetRefuses = alcoolByLoginRef.current[loginKey(cible)] === false;
+            if (!targetRefuses) spendEcus(prix);
+          }
+          newMsg = { id: crypto.randomUUID(), type: "drink", login: displayLogin(login), content: t(tisane ? "tavern.offerTisane" : "tavern.offerDrink", { from: displayLogin(login), to: displayLogin(cible) }), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneTourneeGenerale") {
+          // Lane F1 — 42["taverneTourneeGenerale", date, id, login, prix]:
+          // animated overlay (view auto-dismisses) + chat line.
+          const login = data[3];
+          if (typeof login !== "string" || !isValidLogin(login)) return;
+          addPresent(login);
+          const prix = numField(data[4]);
+          const selfLowerTournee = loginKey(usernameRef.current);
+          if (!!selfLowerTournee && loginKey(login) === selfLowerTournee) spendEcus(prix);
+          setTournee({ login: displayLogin(login), key: crypto.randomUUID() });
+          newMsg = { id: crypto.randomUUID(), type: "tournee", login: displayLogin(login), content: t("tavern.tournee", { user: displayLogin(login) }), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneAccepteAlcool") {
+          // Lane F1 — 42["taverneAccepteAlcool", login, accepter]: info line.
+          // Lane F3 — no consent-REQUEST event exists in the official bundle:
+          // this frame is a plain acceptance-state broadcast (official
+          // onAccepteAlcool updates the self tooltip + presents). Sync our
+          // toggle state when the broadcast concerns us; others stay lines.
+          const login = data[1];
+          if (typeof login !== "string" || !isValidLogin(login)) return;
+          const accepter = boolField(data[2]) ?? false;
+          // Tisane rules: ALWAYS record the broadcast login in the per-player
+          // map (self + others); unknown keys keep meaning "assume accepts".
+          const aa = boolField(data[2]);
+          if (aa !== null) {
+            const key = loginKey(login);
+            if (key) {
+              alcoolByLoginRef.current = { ...alcoolByLoginRef.current, [key]: aa };
+              setAlcoolByLogin(alcoolByLoginRef.current);
+            }
+          }
+          const selfLowerAA = loginKey(usernameRef.current);
+          if (selfLowerAA && loginKey(login) === selfLowerAA) {
+            if (aa !== null) setAccepteAlcool(aa);
+          }
+          newMsg = { id: crypto.randomUUID(), type: "system", content: t(accepter ? "tavern.acceptsAlcohol" : "tavern.refusesAlcoholLine", { user: displayLogin(login) }), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneEmoteKick") {
+          // Lane F1 — 42["taverneEmoteKick", date, id, login, loginCible].
+          // Lane F3 — official renders this via onEmote (login=false, the
+          // "Videur" fragment with both actors), so the line is an emote,
+          // not a plain system line.
+          const login = data[3];
+          const cible = data[4];
+          if (typeof login !== "string" || typeof cible !== "string") return;
+          if (!isValidLogin(login) || !isValidLogin(cible)) return;
+          newMsg = { id: crypto.randomUUID(), type: "emote", content: t("tavern.videurKick", { user: displayLogin(login), target: displayLogin(cible) }), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "tavernePersonnageKick" || eventName === "tavernePersonnageBan" || eventName === "tavernePersonnageUnban") {
+          // Lane F1 — confirmation that our kick/ban/unban went through
+          // (official: afficheMessageErreur). Single login arg (data[1]).
+          const login = typeof data[1] === "string" ? data[1] : null;
+          const who = login && isValidLogin(login) ? displayLogin(login) : "?";
+          const key = eventName === "tavernePersonnageKick" ? "tavern.youKicked" : eventName === "tavernePersonnageBan" ? "tavern.youBanned" : "tavern.youUnbanned";
+          newMsg = { id: crypto.randomUUID(), type: "error", content: t(key, { user: who }), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneKick") {
+          // Lane F1 — we were kicked: fatal flag (blocking overlay, Lane F3).
+          setKicked(true);
+          newMsg = { id: crypto.randomUUID(), type: "error", content: t("tavern.kickedSelf"), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneBan") {
+          // Lane F1 — we were banned: fatal flag (blocking overlay, Lane F3).
+          setBanned(true);
+          newMsg = { id: crypto.randomUUID(), type: "error", content: t("tavern.bannedSelf"), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneBanFlood") {
+          // Lane F3 — flood is NOT fatal (official onBanFlood: error line +
+          // input disabled ~30s with countdown). Mute the input; the view
+          // disables the textarea/send while floodMuted.
+          if (floodTimer.current) clearTimeout(floodTimer.current);
+          setFloodMuted(true);
+          floodTimer.current = setTimeout(() => {
+            setFloodMuted(false);
+            floodTimer.current = null;
+          }, FLOOD_MUTE_MS);
+          newMsg = { id: crypto.randomUUID(), type: "error", content: t("tavern.banFlood"), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneRafraichirPage") {
+          // Lane F3 — server asks for a page refresh (official onMAJTaverne:
+          // location.reload()). No payload; raise the flag and let the view
+          // show a blocking overlay with a user-gesture refresh button.
+          setNeedsRefresh(true);
+          return;
         } else if (eventName === "taverneErreur") {
           const err = data[1] as string;
           if (err === "PlaceReserve" || err === "PlaceDejaPrise") {
@@ -697,7 +1064,11 @@ export function useTaverne(username: string, idLieu: number) {
               autoSeat.current.quietTimer = setTimeout(() => tryAutoSeat(), 150);
             }
           } else {
-            newMsg = { id: crypto.randomUUID(), type: "error", content: t("error.generic", { err }), timestamp: nowTime, created_at: nowIso };
+            // Lane F1 — complete mapping (official chatTaverne.js switch);
+            // parametre is interpolated where the official message uses it.
+            const parametre = data[2];
+            const selfDisp = usernameRef.current.trim() ? displayLogin(usernameRef.current) : t("chat.you");
+            newMsg = { id: crypto.randomUUID(), type: "error", content: mapTaverneError(err, parametre, selfDisp), timestamp: nowTime, created_at: nowIso };
           }
         }
 
@@ -878,6 +1249,89 @@ export function useTaverne(username: string, idLieu: number) {
   // current values go through refs.
   }, [username, idLieu]);
 
+  // Lane F1 — social/economy emits. Failures surface via the room error
+  // banner (same TTL as other transient errors), never as a crash.
+  const offerDrink = async (login: string) => {
+    try {
+      await api.taverneOffreVerre(login);
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  const orderMenu = async (id: number) => {
+    // Reuses the existing /manger emit (taverneCommandeRepas) — no new command.
+    try {
+      await api.wsSend(`/manger ${id}`);
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  const buyTournee = async () => {
+    try {
+      await api.taverneTourneeGenerale();
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  const orderDrink = async () => {
+    // Reuses the existing /boire emit (taverneCommandeVerre) — no new command.
+    try {
+      await api.wsSend("/boire");
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  // Lane F3 — proactive alcohol consent toggle (official checkbox
+  // #chatMenuInputAccepteAlcool → chat.accepteAlcool). The server answers
+  // with a taverneAccepteAlcool broadcast that re-syncs the state above.
+  const toggleAccepteAlcool = async () => {
+    const next = !accepteAlcool;
+    try {
+      await api.taverneAccepteAlcool(next);
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  // Lane F3 — moderation (PlayerMenu; server enforces rights and answers
+  // with tavernePersonnageKick/Ban/Unban confirmations or taverneErreur
+  // PasAutoKick/PasAutoBan). Failures surface via the transient error.
+  const kickPlayer = async (login: string) => {
+    try {
+      await api.taverneKick(login);
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  const banPlayer = async (login: string) => {
+    try {
+      await api.taverneBan(login);
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
+  const unbanPlayer = async (login: string) => {
+    try {
+      await api.taverneUnban(login);
+    } catch (e) {
+      setError(String(e));
+      setTimeout(() => setError(""), ERROR_TTL_MS);
+    }
+  };
+
   return {
     messages, setMessages,
     presentUsers, places, totalPlaces, selectedPlace, setSelectedPlace,
@@ -885,6 +1339,14 @@ export function useTaverne(username: string, idLieu: number) {
     error, setError, status, setStatus,
     isConnected, setIsConnected,
     typingUsers,
+    // Lane F2 — tavern ground type for the reserved-seat status icons.
+    lieu,
     addPresent, setPresentUsers, setPlaces, setTotalPlaces,
+    // Lane F1 — social/economy (later lanes build on these names).
+    menus, ecus, ecusPulse, alcoolRate, alcoolByLogin, tournee, kicked, banned,
+    offerDrink, orderMenu, orderDrink, buyTournee, clearTournee, clearSocialState,
+    // Lane F3 — consent, fatal flags, flood mute, moderation.
+    accepteAlcool, needsRefresh, floodMuted,
+    toggleAccepteAlcool, kickPlayer, banPlayer, unbanPlayer,
   };
 }

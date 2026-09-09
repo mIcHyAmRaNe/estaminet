@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+## 0.4.0
+
+### Added
+- Social/economy parity with the official tavern client:
+  - Tavern menu popup (dishes, ingredients, prices) built from
+    `taverneMajMenus`; ordering reuses the existing `taverneCommandeRepas`
+    (`/manger <id>`) emit.
+  - Écus balance in the chat header (from `taverneMajPerso infos.argent`)
+    with a +/- pulse on spends; optimistic spend is corrected by the
+    authoritative purse event.
+  - Per-player context menu (hover a portrait): offer a drink
+    (`taverneOffreVerre`), whisper (prefills `/w`), open the official
+    character sheet.
+  - Tournée générale: dedicated emit plus an animated overlay notification
+    with the official illustration.
+  - Drink / meal / round chat lines rendered with their official mini
+    icons.
+- Herbal-tea rules: when the target (or you) refuses alcohol, offering or
+  ordering "a drink" becomes a tisane and costs no écus (labels adapt, no
+  optimistic spend); tournée générale serves a glass to everyone who
+  accepts alcohol and a tisane to the others — you are served even alone.
+- Drunkenness: header gauge on the official ~0–20 scale
+  (`taverneChangeTauxAlcool`), proactive alcohol-consent toggle
+  (`taverneAccepteAlcool`), per-player acceptance map drives the
+  verre-vs-tisane labels.
+- Moderation: kick / ban / unban entries in the player menu (rights are
+  server-enforced, errors surface inline), blocking fatal overlays for
+  kick / ban and `taverneRafraichirPage`, and a 30 s input mute for flood
+  (`taverneBanFlood`) instead of a fatal ban.
+- Church mode (`lieu === 'eglise'`): all drink UI is hidden.
+- "X écrit…" typing line near the input, and linkified player names
+  (`.lien-perso`) opening the official character sheet.
+- Reserved-seat status badges (tavernier / noble / marié / curé) derived
+  from the tavern ground type (`lieu`).
+- Sound controller with four modes (tout / son / musique / aucun),
+  persisted locally with migration from the legacy boolean toggle.
+- Header context menu (Fluent `MoreVertical` icon) grouping copy chat log,
+  portrait refresh, sound modes and language; the presence counter moved
+  into a status-bar footer at the bottom of the room.
+- New Tauri commands: `taverne_offre_verre`, `taverne_tournee_generale`,
+  `taverne_accepte_alcool`, `taverne_kick`, `taverne_ban`, `taverne_unban`.
+- Complete `taverneErreur` mapping (all 15 official codes).
+- Entrance polish: staggered fadeInUp on seat cards, hover highlights,
+  popup fades, `prefers-reduced-motion` respected.
+
+### Changed
+- Tavern images are now bundled locally (20 assets in
+  `src/assets/images/interieurTaverne/`: background, portrait frames,
+  chat zone, feature and status icons) instead of being fetched from the
+  game CDN; portrait rendering stays remote by design.
+- Font housekeeping: removed 4 unused Ubuntu `.ttf` files (the woff2 set
+  stays), replaced the dead `--font-sans` token with `--font-body`, and
+  deleted the stale `_room.scss` duplicate (`room.css` is the single
+  source).
+
 ## 0.3.0
 
 ### Added

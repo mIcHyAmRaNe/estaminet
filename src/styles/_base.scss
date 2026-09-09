@@ -119,12 +119,12 @@
   --surface-solid: #1e1e2e;
   --surface-hover: #313244;
 
-  /* CDN assets — keep in sync with src/lib/config.ts CDN_TAVERN / TAVERN_BG */
-  --tavern-bg: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/fonds/fondNormal_nuit.jpg");
-  --tavern-cadre-vide: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadreVide.png");
-  --tavern-cadre-plein: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadrePlein.png");
-  --tavern-lisere: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/lisere.png");
-  --tavern-zone-repeat: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/zoneTchat_repeat.png");
+  /* Local tavern assets — bundled in src/assets/images/interieurTaverne/ (keep in sync with src/lib/config.ts CDN_TAVERN / TAVERN_BG) */
+  --tavern-bg: url("../assets/images/interieurTaverne/fondNormal_nuit.jpg");
+  --tavern-cadre-vide: url("../assets/images/interieurTaverne/cadreVide.png");
+  --tavern-cadre-plein: url("../assets/images/interieurTaverne/cadrePlein.png");
+  --tavern-lisere: url("../assets/images/interieurTaverne/lisere.png");
+  --tavern-zone-repeat: url("../assets/images/interieurTaverne/zoneTchat_repeat.png");
 
   --primary: #cba6f7;
   --primary-hover: #b4befe;

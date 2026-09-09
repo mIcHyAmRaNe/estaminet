@@ -192,3 +192,84 @@ pub async fn change_place(state: State<'_, AppState>, id_place: u64) -> Result<(
         .map_err(|_| AppError::ConnectionLost.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn taverne_offre_verre(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    let payload = socket_io("taverneOffreVerre", &[json!(login)]);
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn taverne_tournee_generale(state: State<'_, AppState>) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    let payload = socket_io("taverneTourneeGenerale", &[]);
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn taverne_accepte_alcool(
+    state: State<'_, AppState>,
+    accepter: bool,
+) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    let payload = socket_io("taverneAccepteAlcool", &[json!(accepter)]);
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn taverne_kick(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    let payload = socket_io("taverneKick", &[json!(login)]);
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn taverne_ban(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    let payload = socket_io("taverneBan", &[json!(login)]);
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn taverne_unban(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    let payload = socket_io("taverneUnban", &[json!(login)]);
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}

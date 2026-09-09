@@ -40,13 +40,19 @@ export const RECENTS_MAX = 5;
 // Typing indicator: emit a stop after this delay without input.
 export const TYPING_STOP_DELAY_MS = 4000;
 
-// Sound: localStorage key for the message-sound toggle (default enabled).
+// Sound: localStorage key for the 4-mode sound controller (official:
+// tout / son / musique / aucun). Default "tout".
+export const SOUND_MODE_KEY = "estaminet.soundMode";
+// Legacy boolean toggle (pre-modes): migrated on read, kept in sync on
+// write so older builds still see a coherent value.
 export const SOUND_ENABLED_KEY = "estaminet.soundEnabled";
 
 // Network / UX
 export const SCROLL_THRESHOLD = 100;
 export const ERROR_TTL_MS = 3500;
-export const PORTRAIT_RETRY_MS = 1200;
+// Lane F3 — flood mute: official onBanFlood disables the chat input for 30s
+// (error line + countdown, NOT a fatal popup).
+export const FLOOD_MUTE_MS = 30000;export const PORTRAIT_RETRY_MS = 1200;
 export const COPIED_TTL_MS = 1800;
 export const WS_RECONNECT_DELAY_MS = 900;
 
@@ -61,9 +67,12 @@ export const CHAT_WSS_HOST = "chat.lesroyaumes.com";
 // Midas calques: use the oxv CDN directly — renaissancekingdoms.com 302s to
 // it but WITHOUT Access-Control-Allow-Origin on the redirect hop, which fails
 // CORS-mode image loads (crossOrigin="anonymous" required for toDataURL).
-// Final CDN serves ACAO:* (verified 2026-09). Keep in sync with TAVERN_BG etc.
+// Final CDN serves ACAO:* (verified 2026-09). Tavern decor images are bundled
+// locally instead — see CDN_TAVERN / TAVERN_BG below.
 export const MIDAS_CDN = "https://lesroyaumes.cdn.oxv.fr/images/";
-export const CDN_IMAGES = "https://www.renaissancekingdoms.com/images/";
-export const TAVERN_BG = "https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/fonds/fondNormal_nuit.jpg";
+// Local tavern assets, bundled in src/assets/images/interieurTaverne/.
+// (Downloaded from the official site/CDN in 2026-09; see git history for sources.)
+export const CDN_IMAGES = "../assets/images/interieurTaverne/";
+export const TAVERN_BG = "../assets/images/interieurTaverne/fondNormal_nuit.jpg";
 export const TAVERN_BG_NIGHT = TAVERN_BG;
-export const CDN_TAVERN = "https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/";
+export const CDN_TAVERN = "../assets/images/interieurTaverne/";

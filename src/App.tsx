@@ -82,6 +82,7 @@ export default function App() {
     taverne.setPlaces(Array(taverne.totalPlaces).fill(null));
     taverne.setSelectedPlace(null);
     taverne.setIsConnected(false);
+    taverne.clearSocialState();
   };
 
   // Step 1 (form): login opens the HTTP session only — no wsConnect.
@@ -345,6 +346,27 @@ export default function App() {
         tavernName={taverns.find((tav: Tavern) => tav.id === idLieu)?.name ?? t("tavern.fallback", { id: idLieu })}
         currentUser={username}
         typingUsers={taverne.typingUsers}
+        lieu={taverne.lieu}
+        menus={taverne.menus}
+        ecus={taverne.ecus}
+        ecusPulse={taverne.ecusPulse}
+        tournee={taverne.tournee}
+        clearTournee={taverne.clearTournee}
+        onOfferDrink={taverne.offerDrink}
+        onOrderMenu={taverne.orderMenu}
+        onOrderDrink={taverne.orderDrink}
+        onBuyTournee={taverne.buyTournee}
+        alcoolRate={taverne.alcoolRate}
+        accepteAlcool={taverne.accepteAlcool}
+        alcoolByLogin={taverne.alcoolByLogin}
+        onToggleAlcool={taverne.toggleAccepteAlcool}
+        kicked={taverne.kicked}
+        banned={taverne.banned}
+        needsRefresh={taverne.needsRefresh}
+        floodMuted={taverne.floodMuted}
+        onKickPlayer={taverne.kickPlayer}
+        onBanPlayer={taverne.banPlayer}
+        onUnbanPlayer={taverne.unbanPlayer}
       />
       {bredouille.bredouille && (
         <div class="bredouille-overlay" onClick={bredouille.clear}>

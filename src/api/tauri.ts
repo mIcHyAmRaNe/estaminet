@@ -47,6 +47,24 @@ export const api = {
 
   getTavernePlaces: (idLieu: number) => invoke<number>("get_taverne_places", { idLieu }),
 
+  // ── Lane F1 — social/economy commands (backend in src-tauri/src/commands/chat.rs) ──
+  // Offer a drink to another player (emits taverneOffreVerre).
+  taverneOffreVerre: (login: string) => invoke<void>("taverne_offre_verre", { login }),
+
+  // Buy a general round for the whole tavern (emits taverneTourneeGenerale).
+  taverneTourneeGenerale: () => invoke<void>("taverne_tournee_generale"),
+
+  // Opt in/out of receiving alcohol (emits taverneAccepteAlcool).
+  taverneAccepteAlcool: (accepter: boolean) =>
+    invoke<void>("taverne_accepte_alcool", { accepter }),
+
+  // Moderation (UI lands in a later lane — wrappers ready).
+  taverneKick: (login: string) => invoke<void>("taverne_kick", { login }),
+
+  taverneBan: (login: string) => invoke<void>("taverne_ban", { login }),
+
+  taverneUnban: (login: string) => invoke<void>("taverne_unban", { login }),
+
   getPortraitJson: (login: string) => invoke<string>("get_portrait_json", { login }),
 
   isConnected: () => invoke<boolean>("is_connected"),

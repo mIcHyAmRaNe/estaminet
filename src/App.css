@@ -62,12 +62,10 @@
   --text-lg: 16px;
   --text-xl: 18px;
   --text-2xl: 24px;
-
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 html, body {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -153,7 +151,7 @@ html, body {
   color: var(--text);
   appearance: none;
   font-size: var(--text-md);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
 }
 
 .field select {
@@ -231,7 +229,7 @@ html, body {
   color: var(--on-primary);
   font-weight: 600;
   font-size: var(--text-md);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   cursor: pointer;
   transition: background 0.15s, opacity 0.15s, transform 0.12s;
 }
