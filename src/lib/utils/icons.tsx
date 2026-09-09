@@ -30,6 +30,9 @@ import infoSvg from "../../assets/icons/fluent/ic_fluent_info_24_regular.svg?raw
 import arrowLeftSvg from "../../assets/icons/fluent/ic_fluent_arrow_left_24_regular.svg?raw";
 import arrowEnterLeftSvg from "../../assets/icons/fluent/ic_fluent_arrow_enter_left_24_regular.svg?raw";
 import personSvg from "../../assets/icons/fluent/ic_fluent_person_24_regular.svg?raw";
+import arrowClockwiseSvg from "../../assets/icons/fluent/ic_fluent_arrow_clockwise_24_regular.svg?raw";
+import speakerOnSvg from "../../assets/icons/fluent/ic_fluent_speaker_2_24_regular.svg?raw";
+import speakerOffSvg from "../../assets/icons/fluent/ic_fluent_speaker_mute_24_regular.svg?raw";
 
 type IconProps = {
   size?: number;
@@ -81,3 +84,6 @@ export const Info = makeFluentIcon(infoSvg);
 export const ArrowLeft = makeFluentIcon(arrowLeftSvg);
 export const ArrowEnterLeft = makeFluentIcon(arrowEnterLeftSvg);
 export const Person = makeFluentIcon(personSvg);
+export const ArrowClockwise = makeFluentIcon(arrowClockwiseSvg);
+export const SpeakerOn = makeFluentIcon(speakerOnSvg);
+export const SpeakerOff = makeFluentIcon(speakerOffSvg);

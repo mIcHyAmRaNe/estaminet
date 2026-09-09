@@ -1,17 +1,95 @@
-import { useRef, useEffect } from "preact/hooks";
+import { useRef, useEffect, useState } from "preact/hooks";
 import type { ChatRoomProps } from "../../lib/types";
 import { t } from "../../lib/i18n";
+import { api } from "../../api/tauri";
+import { TYPING_STOP_DELAY_MS } from "../../lib/config";
 import { useAutoScroll } from "../../lib/hooks/useAutoScroll";
 import { isChopineText } from "../../lib/utils/chat-guards";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
-import AvatarPortrait from "./AvatarPortrait";
+import AvatarPortrait, { clearPortraitCache } from "./AvatarPortrait";
 
 export default function ChatRoom(props: ChatRoomProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const { showScrollBtn, pendingCount, scrollToBottom, handleScroll } = useAutoScroll(props.messages, listRef, 100);
 
   const msgCount = props.messages.length;
+  const typingUsers = props.typingUsers ?? [];
+
+  const [avatarRefresh, setAvatarRefresh] = useState(0);
+  const handleRefreshPortraits = () => {
+    clearPortraitCache();
+    setAvatarRefresh((v) => v + 1);
+  };
+
+  // Typing emit: start on first non-empty input, stop 4s after the last
+  // keystroke, immediately on clear/send/unmount. Every backend call is
+  // guarded so a missing command can never crash the UI.
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
+  const stopTyping = () => {
+    if (typingTimer.current) {
+      clearTimeout(typingTimer.current);
+      typingTimer.current = null;
+    }
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      try {
+        api.typingStop().catch(() => {});
+      } catch {
+        // Backend command missing — ignore.
+      }
+    }
+  };
+  const handleInput = (e: Event) => {
+    const v = (e.target as HTMLTextAreaElement).value;
+    props.setInputMessage(v);
+    if (v) {
+      if (!isTypingRef.current) {
+        isTypingRef.current = true;
+        try {
+          api.typingStart().catch(() => {});
+        } catch {
+          // Backend command missing — ignore.
+        }
+      }
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => {
+        typingTimer.current = null;
+        isTypingRef.current = false;
+        try {
+          api.typingStop().catch(() => {});
+        } catch {
+          // Backend command missing — ignore.
+        }
+      }, TYPING_STOP_DELAY_MS);
+    } else {
+      stopTyping();
+    }
+  };
+  const handleSendWrapper = (e: Event) => {
+    stopTyping();
+    props.onSend(e);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimer.current) {
+        clearTimeout(typingTimer.current);
+        typingTimer.current = null;
+      }
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        try {
+          api.typingStop().catch(() => {});
+        } catch {
+          // Backend command missing — ignore.
+        }
+      }
+    };
+    // Mount-only teardown (helpers use refs + stable setters).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -20,7 +98,7 @@ export default function ChatRoom(props: ChatRoomProps) {
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      props.onSend(e as unknown as Event);
+      handleSendWrapper(e as unknown as Event);
     }
   };
 
@@ -101,9 +179,10 @@ export default function ChatRoom(props: ChatRoomProps) {
                 const last = [...props.messages].reverse().find((m) => (m.login ?? "").toLowerCase() === nameLower);
                 const isEmote = last?.type === "emote";
                 const chopine = last ? isChopineText(last.content) : false;
+                const isTyping = typingUsers.includes(nameLower);
                 return (
                   <div
-                    key={`player-${name.toLowerCase()}`}
+                    key={`player-${name.toLowerCase()}-${avatarRefresh}`}
                     class={`character-card${isOwn ? " own-player" : ""}${isSelected ? " selected" : ""}`}
                     data-place={String(place)}
                     title={isOwn ? t("seat.own") : name}
@@ -113,7 +192,9 @@ export default function ChatRoom(props: ChatRoomProps) {
                     </div>
                     <span class="character-name" title={name}>{name}</span>
                     <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
-                      {last ? last.content.slice(0, 56) : "—"}
+                      {isTyping ? (
+                        <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
+                      ) : last ? last.content.slice(0, 56) : "—"}
                     </span>
                   </div>
                 );
@@ -148,9 +229,10 @@ export default function ChatRoom(props: ChatRoomProps) {
                   const isEmote = last?.type === "emote";
                   const chopine = last ? isChopineText(last.content) : false;
                   const isOwn = !!currentLower && nameLower === currentLower;
+                  const isTyping = typingUsers.includes(nameLower);
                   return (
                     <div
-                      key={`standing-${nameLower}`}
+                      key={`standing-${nameLower}-${avatarRefresh}`}
                       class={`character-card standing${isOwn ? " own-player" : ""}`}
                       title={isOwn ? t("seat.ownStanding") : name}
                       style={{ position: "relative", left: "auto", top: "auto", transform: "none", width: 84, opacity: 1, animation: "none" }}
@@ -160,7 +242,9 @@ export default function ChatRoom(props: ChatRoomProps) {
                       </div>
                       <span class="character-name" title={name} style={{ maxWidth: 80 }}>{name}</span>
                       <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
-                        {last ? last.content.slice(0, 56) : "—"}
+                        {isTyping ? (
+                          <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
+                        ) : last ? last.content.slice(0, 56) : "—"}
                       </span>
                     </div>
                   );
@@ -178,6 +262,7 @@ export default function ChatRoom(props: ChatRoomProps) {
             presentUsers={props.presentUsers}
             onDisconnect={props.onDisconnect}
             onCopy={props.onCopy}
+            onRefreshPortraits={handleRefreshPortraits}
           />
 
           <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -196,7 +281,7 @@ export default function ChatRoom(props: ChatRoomProps) {
               <textarea
                 class="room-textarea"
                 value={props.inputMessage}
-                onInput={(e: Event) => props.setInputMessage((e.target as HTMLTextAreaElement).value)}
+                onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={t("chat.placeholder")}
                 maxlength={500}
@@ -206,7 +291,7 @@ export default function ChatRoom(props: ChatRoomProps) {
               ></textarea>
               <button
                 class="room-send-btn"
-                onClick={props.onSend}
+                onClick={handleSendWrapper}
                 disabled={!props.inputMessage.trim() || !props.isConnected}
                 aria-label={t("chat.send")}
               />

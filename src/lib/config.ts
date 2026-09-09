@@ -37,6 +37,12 @@ export const APP_VERSION = "0.2.0";
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";
 export const RECENTS_MAX = 5;
 
+// Typing indicator: emit a stop after this delay without input.
+export const TYPING_STOP_DELAY_MS = 4000;
+
+// Sound: localStorage key for the message-sound toggle (default enabled).
+export const SOUND_ENABLED_KEY = "estaminet.soundEnabled";
+
 // Network / UX
 export const SCROLL_THRESHOLD = 100;
 export const ERROR_TTL_MS = 3500;

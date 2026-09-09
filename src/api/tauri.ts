@@ -36,6 +36,10 @@ export const api = {
 
   wsSend: (message: string) => invoke<void>("ws_send", { message }),
 
+  typingStart: () => invoke<void>("ws_typing_start"),
+
+  typingStop: () => invoke<void>("ws_typing_stop"),
+
   changePlace: (idPlace: number) => invoke<void>("change_place", { idPlace }),
 
   saveChatLog: (tavernId: number, content: string) =>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "preact/hooks";
 import { listen } from "@tauri-apps/api/event";
 import { api } from "../../api/tauri";
 import { t } from "../i18n";
+import { playMessageSound } from "../utils/sound";
 import type { ChatMessage } from "../types";
 import {
   PLACE_RESERVED_DEFAULT,
@@ -91,6 +92,11 @@ export function useTaverne(username: string, idLieu: number) {
   const totalPlacesRef = useRef(totalPlaces);
   const usernameRef = useRef(username);
   const idLieuRef = useRef(idLieu);
+  // Presence mirror for synchronous "already present" tests inside the
+  // single-flight socket handler (state setters batch across events in
+  // the same tick, refs don't). Kept in sync inside addPresent /
+  // removePresent, the silent connectMe rebuild and every clear.
+  const presentKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     lastPlaceRef.current = lastPlaceAttempt;
@@ -112,6 +118,13 @@ export function useTaverne(username: string, idLieu: number) {
     isConnectedRef.current = isConnected;
   }, [isConnected]);
 
+  // Safety net: reconcile the presence mirror from state (covers external
+  // resets via the exported setPresentUsers, e.g. Leave-room cleanup).
+  // No-op when already in agreement with the eager updates above.
+  useEffect(() => {
+    presentKeysRef.current = new Set(presentUsers.map((u) => u.toLowerCase()));
+  }, [presentUsers]);
+
   const placesRef = useRef<(string | null)[]>(places);
   useEffect(() => {
     placesRef.current = places;
@@ -128,6 +141,8 @@ export function useTaverne(username: string, idLieu: number) {
     setSelectedPlace(null);
     setMessages([]);
     setPresentUsers([]);
+    presentKeysRef.current.clear();
+    setTypingUsers([]);
     enteredSelfRef.current = false;
     whisperBubbleSeenRef.current.clear();
     whisperNoticeRef.current.clear();
@@ -158,6 +173,7 @@ export function useTaverne(username: string, idLieu: number) {
     const clean = login.trim();
     const key = loginKey(clean);
     const disp = displayLogin(clean);
+    presentKeysRef.current.add(key);
     setPresentUsers((prev) => {
       const idx = prev.findIndex((u) => u.toLowerCase() === key);
       if (idx !== -1) {
@@ -173,8 +189,26 @@ export function useTaverne(username: string, idLieu: number) {
   const removePresent = (login: string) => {
     const key = loginKey(login);
     if (!key) return;
+    presentKeysRef.current.delete(key);
     setPresentUsers((prev) => prev.filter((u) => u.toLowerCase() !== key));
     setPlaces((prev) => prev.map((p) => (p !== null && p.toLowerCase() === key ? null : p)));
+  };
+
+  // Typing reception: lowercase logins currently composing (self excluded).
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+  const addTyping = (login: string) => {
+    const key = loginKey(login);
+    if (!key) return;
+    const selfLower = loginKey(usernameRef.current);
+    if (selfLower && key === selfLower) return;
+    setTypingUsers((prev) => (prev.includes(key) ? prev : [...prev, key]));
+  };
+
+  const removeTyping = (login: string) => {
+    const key = loginKey(login);
+    if (!key) return;
+    setTypingUsers((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : prev));
   };
 
   useEffect(() => {
@@ -286,15 +320,27 @@ export function useTaverne(username: string, idLieu: number) {
         const nowTime = new Date().toLocaleTimeString();
         let newMsg: ChatMessage | null = null;
 
-        if (eventName === "taverneMessage") {
+        if (eventName === "taverneDebuteMessage") {
+          const rawLogin = data[1];
+          if (typeof rawLogin === "string") addTyping(rawLogin);
+          return;
+        } else if (eventName === "taverneAnnuleMessage") {
+          const rawLogin = data[1];
+          if (typeof rawLogin === "string") removeTyping(rawLogin);
+          return;
+        } else if (eventName === "taverneMessage") {
           const login = data[3] as string;
           if (typeof login !== "string") return;
           addPresent(login);
+          removeTyping(login);
+          const selfLowerMsg = loginKey(usernameRef.current);
+          if (selfLowerMsg && loginKey(login) !== selfLowerMsg) playMessageSound();
           newMsg = { id: crypto.randomUUID(), type: "normal", login: displayLogin(login), content: data[4] as string, timestamp: nowTime, created_at: nowIso };
         } else if (eventName === "taverneEmote") {
           const login = data[3] as string;
           if (typeof login !== "string") return;
           addPresent(login);
+          removeTyping(login);
           newMsg = { id: crypto.randomUUID(), type: "emote", login: displayLogin(login), content: data[4] as string, timestamp: nowTime, created_at: nowIso };
         } else if (eventName === "taverneEntreTaverne") {
           const login = data[3] as string;
@@ -342,6 +388,15 @@ export function useTaverne(username: string, idLieu: number) {
           const login = data[3] as string;
           if (typeof login !== "string") return;
           removePresent(login);
+          removeTyping(login);
+          newMsg = { id: crypto.randomUUID(), type: "system", content: t("chat.leave", { user: displayLogin(login) }), timestamp: nowTime, created_at: nowIso };
+        } else if (eventName === "taverneQuitteTaverneColere") {
+          // Angry leave: same display as a normal leave (payload
+          // [date, id, login], login at data[3]).
+          const login = data[3] as string;
+          if (typeof login !== "string") return;
+          removePresent(login);
+          removeTyping(login);
           newMsg = { id: crypto.randomUUID(), type: "system", content: t("chat.leave", { user: displayLogin(login) }), timestamp: nowTime, created_at: nowIso };
         } else if (eventName === "taverneInfosPersonnage") {
           // Full list: 42["taverneInfosPersonnage","connectMe",{login:{...}}]
@@ -385,6 +440,8 @@ export function useTaverne(username: string, idLieu: number) {
               if (!seen.has(sk)) seen.set(sk, displayLogin(selfClean));
             }
             setPresentUsers([...seen.values()]);
+            presentKeysRef.current = new Set(seen.keys());
+            setTypingUsers([]);
             if (placements.length > 0) {
               setPlaces((prev) => {
                 const next = [...prev];
@@ -466,13 +523,42 @@ export function useTaverne(username: string, idLieu: number) {
           }
           return;
         } else if (eventName === "connect") {
+          // Relayed socket arrival: visible enter only for a valid,
+          // non-self login not already present (join-burst duplicates and
+          // self stay silent). Same chat.enter text as taverneEntreTaverne.
           const cand = data[1];
-          if (typeof cand === "string" && isValidLogin(cand)) addPresent(cand);
-          return;
+          if (typeof cand === "string" && isValidLogin(cand)) {
+            const key = loginKey(cand);
+            const selfLower = loginKey(usernameRef.current);
+            const isSelf = !!selfLower && key === selfLower;
+            const already = presentKeysRef.current.has(key);
+            addPresent(cand);
+            if (!isSelf && !already) {
+              newMsg = { id: crypto.randomUUID(), type: "system", content: t("chat.enter", { user: displayLogin(cand) }), timestamp: nowTime, created_at: nowIso };
+            } else {
+              return;
+            }
+          } else {
+            if (typeof cand === "string" && cand.trim()) addPresent(cand);
+            return;
+          }
         } else if (eventName === "disconnect") {
+          // Relayed socket departure: visible leave only for a valid,
+          // non-self login currently present. Same chat.leave text as
+          // taverneQuitteTaverne; otherwise silent removal.
           const cand = data[1];
-          if (typeof cand === "string") removePresent(cand);
-          return;
+          if (typeof cand !== "string" || !cand.trim()) return;
+          const key = loginKey(cand);
+          const selfLower = loginKey(usernameRef.current);
+          const isSelf = !!selfLower && key === selfLower;
+          const wasPresent = presentKeysRef.current.has(key);
+          removePresent(cand);
+          removeTyping(cand);
+          if (!isSelf && wasPresent) {
+            newMsg = { id: crypto.randomUUID(), type: "system", content: t("chat.leave", { user: displayLogin(cand) }), timestamp: nowTime, created_at: nowIso };
+          } else {
+            return;
+          }
         } else if (eventName === "taverneInit") {
           // 42["taverneInit",date,{login,portrait,key,place,...}]
           // The payload also carries the place (o.place / o.idPlace /
@@ -565,6 +651,11 @@ export function useTaverne(username: string, idLieu: number) {
               timestamp: nowTime,
               created_at: nowIso,
             };
+            // Full-form whisper targeting self from someone else: chime.
+            const selfLowerWhisper = loginKey(usernameRef.current);
+            if (selfLowerWhisper && loginKey(to) === selfLowerWhisper && loginKey(from) !== selfLowerWhisper) {
+              playMessageSound();
+            }
           } else {
             // Short form: system notice "X whispers to Y", no content.
             let hasBubble = false;
@@ -718,6 +809,8 @@ export function useTaverne(username: string, idLieu: number) {
         setIsConnected(false);
         isConnectedRef.current = false;
         setPresentUsers([]);
+        presentKeysRef.current.clear();
+        setTypingUsers([]);
         setPlaces(Array(totalPlacesRef.current).fill(null));
         return;
       }
@@ -743,6 +836,8 @@ export function useTaverne(username: string, idLieu: number) {
       // Micro-drop + same-tavern auto reconnect = history preserved.
       // The clear + guard live on idLieu change only.
       setPresentUsers([]);
+      presentKeysRef.current.clear();
+      setTypingUsers([]);
       setPlaces(Array(totalPlacesRef.current).fill(null));
       // Auto-reconnect: only on unexpected loss (we were connected), never
       // when no live session is required, with backoff and stop on success
@@ -789,6 +884,7 @@ export function useTaverne(username: string, idLieu: number) {
     lastPlaceAttempt, setLastPlaceAttempt, lastPlaceRef,
     error, setError, status, setStatus,
     isConnected, setIsConnected,
+    typingUsers,
     addPresent, setPresentUsers, setPlaces, setTotalPlaces,
   };
 }

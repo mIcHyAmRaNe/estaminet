@@ -344,6 +344,7 @@ export default function App() {
         isConnected={taverne.isConnected}
         tavernName={taverns.find((tav: Tavern) => tav.id === idLieu)?.name ?? t("tavern.fallback", { id: idLieu })}
         currentUser={username}
+        typingUsers={taverne.typingUsers}
       />
       {bredouille.bredouille && (
         <div class="bredouille-overlay" onClick={bredouille.clear}>

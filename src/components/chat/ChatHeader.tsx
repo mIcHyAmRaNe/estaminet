@@ -1,5 +1,6 @@
-import { Copy, Check } from "../../lib/utils/icons";
+import { Copy, Check, ArrowClockwise, SpeakerOn, SpeakerOff } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
+import { isSoundEnabled, setSoundEnabled } from "../../lib/utils/sound";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import { useState } from "preact/hooks";
 
@@ -10,15 +11,22 @@ interface Props {
   presentUsers?: string[];
   onDisconnect: () => void;
   onCopy?: () => Promise<void>;
+  onRefreshPortraits: () => void;
 }
 
-export default function ChatHeader({ tavernName, isConnected, messageCount, presentUsers, onDisconnect, onCopy }: Props) {
+export default function ChatHeader({ tavernName, isConnected, messageCount, presentUsers, onDisconnect, onCopy, onRefreshPortraits }: Props) {
   const [copied, setCopied] = useState(false);
+  const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const handleCopy = async () => {
     if (!onCopy) return;
     await onCopy();
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  };
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
   };
   const count = presentUsers ? presentUsers.length : messageCount;
   const names = presentUsers && presentUsers.length ? presentUsers.join(", ") : t("presence.none");
@@ -68,6 +76,42 @@ export default function ChatHeader({ tavernName, isConnected, messageCount, pres
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
         )}
+        <button
+          onClick={onRefreshPortraits}
+          title={t("chat.refreshTitle")}
+          aria-label={t("chat.refreshTitle")}
+          style={{
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border)",
+            background: "rgba(255,255,255,0.06)",
+            color: "#bcc4d7",
+          }}
+        >
+          <ArrowClockwise size={16} />
+        </button>
+        <button
+          onClick={toggleSound}
+          title={t(soundOn ? "chat.soundOff" : "chat.soundOn")}
+          aria-label={t(soundOn ? "chat.soundOff" : "chat.soundOn")}
+          style={{
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border)",
+            background: "rgba(255,255,255,0.06)",
+            color: "#bcc4d7",
+          }}
+        >
+          {soundOn ? <SpeakerOn size={16} /> : <SpeakerOff size={16} />}
+        </button>
         <LanguageSwitcher />
         <button
           onClick={onDisconnect}

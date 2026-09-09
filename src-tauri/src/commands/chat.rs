@@ -127,6 +127,32 @@ pub async fn ws_send(state: State<'_, AppState>, message: String) -> Result<(), 
     Ok(())
 }
 
+#[tauri::command]
+pub async fn ws_typing_start(state: State<'_, AppState>) -> Result<(), String> {
+    let payload = socket_io("taverneDebuteMessage", &[]);
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn ws_typing_stop(state: State<'_, AppState>) -> Result<(), String> {
+    let payload = socket_io("taverneAnnuleMessage", &[]);
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
 /// Shared teardown: send socket.io close ("41") then drop the session
 /// (token/jar/client). Does NOT touch the keyring — see `auth::logout`.
 /// Emits `ws-closed` with the voluntary payload: the frontend can thus tell

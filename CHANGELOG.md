@@ -3,6 +3,23 @@
 ## Unreleased
 
 ### Added
+- Tavern typing indicator: emit `taverneDebuteMessage` /
+  `taverneAnnuleMessage` via new `ws_typing_start` / `ws_typing_stop`
+  commands; animated ellipsis on the typing player's card (seated and
+  standing).
+- Audible `message_tchat.mp3` cue on incoming room messages and received
+  whispers, with a mute toggle in the chat header (persisted locally).
+- Manual portrait refresh button in the chat header (clears the avatar
+  cache and remounts the cards).
+- Enter/leave system messages for unstable connections (relayed socket
+  connect/disconnect, deduped against presence) and angry leaves
+  (`taverneQuitteTaverneColere`).
+
+### Changed
+- Empty seats no longer render a doubled `cadreVide` frame inside the
+  medallion; the outer card frame is kept.
+
+### Added
 - Auto-update via GitHub Releases (Tauri updater plugin, signed
   `latest.json` artifacts; restart to apply through the process plugin).
 - Build provenance attestations plus per-platform SHA256SUMS files on

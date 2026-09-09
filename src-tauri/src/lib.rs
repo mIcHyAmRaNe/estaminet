@@ -31,6 +31,8 @@ pub fn run() {
             auth::get_session_login,
             chat::ws_connect,
             chat::ws_send,
+            chat::ws_typing_start,
+            chat::ws_typing_stop,
             chat::change_place,
             logs::save_chat_log,
             logs::get_log_dir,

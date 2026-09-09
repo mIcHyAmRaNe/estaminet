@@ -64,6 +64,13 @@ function renderAndCache(key: string, json: string): Promise<PortraitEntry | null
   return promise;
 }
 
+// Drop cached dataURLs and in-flight renders: the next mount re-fetches
+// the portrait JSON and re-renders. Used by the header refresh button.
+export function clearPortraitCache(): void {
+  portraitCache.clear();
+  inFlight.clear();
+}
+
 // DOM structure identical to the old Midas render (root __mini + gender
 // class): the existing CSS (__homme/__femme cropping, medallion) applies
 // as-is to the <img class=__calque>.

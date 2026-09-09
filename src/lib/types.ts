@@ -107,4 +107,5 @@ export interface ChatRoomProps {
   isConnected: boolean;
   tavernName: string;
   currentUser?: string;
+  typingUsers?: string[];
 }

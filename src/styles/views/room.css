@@ -145,8 +145,6 @@
   display: grid;
   align-items: center;
   justify-items: center;
-  background: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadreVide.png") no-repeat top center;
-  background-size: auto 100%;
   margin-top: 6%;
   justify-self: center;
   /* NO filter here: even as a no-op, a filter forces a WebKitGTK compositing
@@ -210,12 +208,8 @@
 .selected .character-portrait:hover {
   background-size: 140px auto;
 }
-.character-card.empty .character-portrait,
-.empty.selected .character-portrait,
-.character-card.empty.selected .character-portrait {
-  background: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadreVide.png") no-repeat top center;
-  background-size: auto 100%;
-}
+/* cadreVide only as card-level outer frame (.character-card): no inner
+   frame on empty medallions. */
 .apercu_personnage_rar {
   position: relative;
   display: block;
@@ -543,3 +537,48 @@
 .room--places-8 .character-card[data-place="5"] { left: 18%; top: 82%; }
 .room--places-8 .character-card[data-place="6"] { left: 50%; top: 88%; }
 .room--places-8 .character-card[data-place="7"] { left: 82%; top: 82%; }
+
+/* ── Typing indicator (lds-ellipsis, 4 dots) ── */
+.lds-ellipsis {
+  display: inline-block;
+  position: relative;
+  width: 60px;
+  height: 14px;
+}
+.lds-ellipsis div {
+  position: absolute;
+  top: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+.lds-ellipsis div:nth-child(1) {
+  left: 6px;
+  animation: lds-ellipsis1 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(2) {
+  left: 6px;
+  animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(3) {
+  left: 22px;
+  animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(4) {
+  left: 38px;
+  animation: lds-ellipsis3 0.6s infinite;
+}
+@keyframes lds-ellipsis1 {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+@keyframes lds-ellipsis2 {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(16px, 0); }
+}
+@keyframes lds-ellipsis3 {
+  0% { transform: scale(1); }
+  100% { transform: scale(0); }
+}
