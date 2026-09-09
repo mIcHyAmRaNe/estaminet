@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0
+
 ### Added
 - Tavern typing indicator: emit `taverneDebuteMessage` /
   `taverneAnnuleMessage` via new `ws_typing_start` / `ws_typing_stop`
@@ -15,16 +17,15 @@
   connect/disconnect, deduped against presence) and angry leaves
   (`taverneQuitteTaverneColere`).
 
-### Changed
-- Empty seats no longer render a doubled `cadreVide` frame inside the
-  medallion; the outer card frame is kept.
-
-### Added
 - Auto-update via GitHub Releases (Tauri updater plugin, signed
   `latest.json` artifacts; restart to apply through the process plugin).
 - Build provenance attestations plus per-platform SHA256SUMS files on
   every release; the release workflow publishes immediately (no draft)
   so update checks never 404.
+
+### Changed
+- Empty seats no longer render a doubled `cadreVide` frame inside the
+  medallion; the outer card frame is kept.
 
 ## 0.2.0
 
