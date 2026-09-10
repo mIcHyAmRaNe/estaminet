@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## [0.5.1] - 2026-09-10
+
+### Fixed
+- Fix spam terminaux Windows : `attrib.exe` appelé à chaque event WS
+  remplacé par `windows-rs` (`SetFileAttributesW`) + masquage une seule
+  fois à la création du dossier (`src-tauri/src/utils/logs.rs`, dép
+  `windows` 0.58).
+
 ## 0.5.0
 
 ### Added

@@ -24,13 +24,34 @@ pub fn log_debug(msg: &str) {
     }
 }
 
+#[cfg(windows)]
+fn hide_dir_windows(dir: &std::path::Path) {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::{HSTRING, PCWSTR};
+    use windows::Win32::Storage::FileSystem::{GetFileAttributesW, SetFileAttributesW, FILE_ATTRIBUTE_HIDDEN};
+    let wide: Vec<u16> = dir.as_os_str().encode_wide().collect();
+    let h = HSTRING::from_wide(&wide);
+    let pwstr = PCWSTR::from_raw(h.as_ptr());
+    unsafe {
+        let attrs = GetFileAttributesW(pwstr);
+        const INVALID: u32 = 0xFFFFFFFF;
+        if attrs != INVALID {
+            let _ = SetFileAttributesW(pwstr, attrs | FILE_ATTRIBUTE_HIDDEN);
+        }
+    }
+}
+
 pub fn hidden_log_dir() -> Result<PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not find the home directory".to_string())?;
         let dir = home.join(".estaminet").join("logs");
+    #[cfg(windows)]
+    let is_new = !dir.exists();
     std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create log directory: {e}"))?;
     #[cfg(windows)]
     {
-        let _ = std::process::Command::new("attrib").arg("+H").arg(&dir).output();
+        if is_new {
+            hide_dir_windows(&dir);
+        }
     }
     Ok(dir)
 }
@@ -47,10 +68,14 @@ pub fn append_ws_line(tavern_id: u64, line: &str) {
     // Spawn-independent helper: keep logic out of socket.rs
     if let Some(home) = dirs::home_dir() {
     let dir = home.join(".estaminet").join("logs");
+        #[cfg(windows)]
+        let is_new = !dir.exists();
         let _ = std::fs::create_dir_all(&dir);
         #[cfg(windows)]
         {
-            let _ = std::process::Command::new("attrib").arg("+H").arg(&dir).output();
+            if is_new {
+                hide_dir_windows(&dir);
+            }
         }
         let date = chrono::Local::now().format("%Y-%m-%d").to_string();
         let path = dir.join(format!("taverne_{}_{}.log", tavern_id, date));
