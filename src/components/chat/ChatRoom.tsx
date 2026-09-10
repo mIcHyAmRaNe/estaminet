@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState } from "preact/hooks";
+import { createPortal } from "preact/compat";
 import type { ChatRoomProps } from "../../lib/types";
 import { t } from "../../lib/i18n";
 import { api } from "../../api/tauri";
-import { TYPING_STOP_DELAY_MS } from "../../lib/config";
+import { MSG_DISPLAY_MAX, TYPING_STOP_DELAY_MS } from "../../lib/config";
 import { useAutoScroll } from "../../lib/hooks/useAutoScroll";
 import { isChopineText } from "../../lib/utils/chat-guards";
 import ChatHeader from "./ChatHeader";
@@ -63,6 +64,79 @@ export default function ChatRoom(props: ChatRoomProps) {
       : props.isConnected
         ? t("status.online")
         : t("status.offline");
+  // Footer presence list as a floating layer: the names render in a
+  // position:fixed node portaled to document.body, so the list escapes
+  // .room-chat overflow:hidden (an absolute child would be clipped).
+  // Positioned from the trigger's getBoundingClientRect(), flipped
+  // above/below on available space, viewport-clamped, repositioned on
+  // scroll/resize while open.
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [presenceOpen, setPresenceOpen] = useState(false);
+  const [presencePos, setPresencePos] = useState<{ top?: number; bottom?: number; left: number; maxHeight: number } | null>(null);
+  const presenceTipId = "room-presence-tooltip";
+  const hasPresenceList = props.presentUsers.length > 0;
+  const cancelPresenceClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+  const positionPresenceTip = () => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const GAP = 10;
+    const MARGIN = 8;
+    const WIDTH = 240;
+    const MAX_H = 320;
+    const spaceAbove = rect.top - GAP - MARGIN;
+    const spaceBelow = window.innerHeight - rect.bottom - GAP - MARGIN;
+    const above = spaceAbove >= spaceBelow;
+    const maxHeight = Math.max(80, Math.min(MAX_H, above ? spaceAbove : spaceBelow));
+    const w = Math.min(WIDTH, Math.max(120, window.innerWidth - MARGIN * 2));
+    const left = Math.min(Math.max(MARGIN, rect.left + rect.width / 2 - w / 2), Math.max(MARGIN, window.innerWidth - w - MARGIN));
+    setPresencePos(
+      above
+        ? { bottom: Math.max(MARGIN, window.innerHeight - rect.top + GAP), left, maxHeight }
+        : { top: rect.bottom + GAP, left, maxHeight },
+    );
+  };
+  const openPresenceTip = () => {
+    cancelPresenceClose();
+    if (props.presentUsers.length === 0) return;
+    positionPresenceTip();
+    setPresenceOpen(true);
+  };
+  const schedulePresenceClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setPresenceOpen(false);
+    }, 120);
+  };
+  useEffect(() => {
+    if (!presenceOpen) return;
+    positionPresenceTip();
+    const onReposition = () => positionPresenceTip();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPresenceOpen(false);
+    };
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("keydown", onKey);
+      if (closeTimer.current) {
+        clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+    };
+    // Live-DOM positioning: re-run on open + list-size change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presenceOpen, presenceCount]);
 
   const [avatarRefresh, setAvatarRefresh] = useState(0);
   const handleRefreshPortraits = () => {
@@ -420,7 +494,7 @@ export default function ChatRoom(props: ChatRoomProps) {
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={t("chat.placeholder")}
-                maxlength={500}
+                maxlength={MSG_DISPLAY_MAX}
                 disabled={!props.isConnected || props.floodMuted ? true : undefined}
                 rows={2}
                 style={{ flex: 1 }}
@@ -435,20 +509,39 @@ export default function ChatRoom(props: ChatRoomProps) {
           </div>
           <div class="room-status-bar">
             <span
+              ref={triggerRef}
               class={`room-presence${props.isConnected ? " is-online" : " is-offline"}`}
               title={presenceTooltip}
+              tabIndex={0}
+              aria-describedby={presenceOpen && hasPresenceList ? presenceTipId : undefined}
+              onMouseEnter={openPresenceTip}
+              onMouseLeave={schedulePresenceClose}
+              onFocus={openPresenceTip}
+              onBlur={schedulePresenceClose}
             >
               ● {props.isConnected ? t("presence.online") : t("presence.offline")} · {presenceCount}
-              {props.presentUsers.length > 0 && (
-                <span class="room-presence-tooltip" role="tooltip">
-                  {props.presentUsers.map((n) => (
-                    <span key={n} class="room-presence-name">{n}</span>
-                  ))}
-                </span>
-              )}
             </span>
+            {presenceOpen && hasPresenceList && presencePos && createPortal(
+              <span
+                id={presenceTipId}
+                class="room-presence-tooltip room-presence-tooltip--floating"
+                role="tooltip"
+                style={
+                  presencePos.bottom !== undefined
+                    ? { left: `${presencePos.left}px`, bottom: `${presencePos.bottom}px`, maxHeight: `${presencePos.maxHeight}px` }
+                    : { left: `${presencePos.left}px`, top: `${presencePos.top ?? 0}px`, maxHeight: `${presencePos.maxHeight}px` }
+                }
+                onMouseEnter={cancelPresenceClose}
+                onMouseLeave={schedulePresenceClose}
+              >
+                {props.presentUsers.map((n) => (
+                  <span key={n} class="room-presence-name">{n}</span>
+                ))}
+              </span>,
+              document.body,
+            )}
             <span class="room-status-count">
-              {props.inputMessage.length}/500 · {t("chat.messageCount", { n: msgCount, s: msgCount !== 1 ? "s" : "" })}
+              {props.inputMessage.length}/{MSG_DISPLAY_MAX} · {t("chat.messageCount", { n: msgCount, s: msgCount !== 1 ? "s" : "" })}
             </span>
           </div>
         </div>

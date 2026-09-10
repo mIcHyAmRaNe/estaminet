@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useEffect } from "preact/hooks";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import AboutDialog from "../ui/AboutDialog";
 import LoginForm from "./LoginForm";
@@ -7,6 +7,12 @@ import { ArrowLeft, Info, Person } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
 import type { AuthStepProps } from "../../lib/types";
 
+// Status toast timing: visible ~3.2s, then a 0.4s fade/slide exit.
+// Presentation only — the useTaverne status string itself is untouched,
+// and errors keep their persistent behavior.
+const STATUS_VISIBLE_MS = 3200;
+const STATUS_EXIT_MS = 400;
+
 // Step 1: who are you? Saved accounts (preselect-then-Connect) or the
 // credential form. No tavern here — that is step 2 (TavernSelect).
 // No wsConnect here either: Connect only opens the HTTP session.
@@ -14,6 +20,22 @@ export default function AuthStep(props: AuthStepProps) {
   const showForm = props.useAnother || props.accounts.length === 0;
   const canConnectSaved = !showForm && props.pickedAccount !== null;
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [toastShow, setToastShow] = useState(false);
+  const [toastLeaving, setToastLeaving] = useState(false);
+
+  useEffect(() => {
+    if (!props.status || props.error) return;
+    setToastShow(true);
+    setToastLeaving(false);
+    const hide = setTimeout(() => setToastLeaving(true), STATUS_VISIBLE_MS);
+    const gone = setTimeout(() => setToastShow(false), STATUS_VISIBLE_MS + STATUS_EXIT_MS);
+    return () => {
+      clearTimeout(hide);
+      clearTimeout(gone);
+    };
+  }, [props.status, props.error]);
+
+  const showStatus = props.status !== "" && !props.error && toastShow;
 
   return (
     <div class="auth-container">
@@ -47,7 +69,9 @@ export default function AuthStep(props: AuthStepProps) {
         </div>
 
         {props.error && <div class="auth-error">{props.error}</div>}
-        {props.status && !props.error && <div class="auth-status">{props.status}</div>}
+        {showStatus && (
+          <div class={`auth-status${toastLeaving ? " is-leaving" : ""}`}>{props.status}</div>
+        )}
 
         {showForm ? (
           <>

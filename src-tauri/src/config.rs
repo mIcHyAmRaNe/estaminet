@@ -20,6 +20,10 @@ pub const URL_VILLAGE: &str = "https://www.renaissancekingdoms.com/village.php";
 pub const URL_FICHE_PERSONNAGE: &str =
     "https://www.renaissancekingdoms.com/FichePersonnage.php";
 
+/// oxv images CDN root — mirror of MIDAS_CDN in src/lib/config.ts. The
+/// `fetch_portrait_asset` proxy only serves URLs under this prefix (SSRF guard).
+pub const CDN_IMAGES_ROOT: &str = "https://lesroyaumes.cdn.oxv.fr/images/";
+
 pub const MSG_MAX_LEN: usize = 290;
 pub const WS_PING_SECS: u64 = 25;
 pub const HTTP_TIMEOUT_SECS: u64 = 30;

@@ -7,7 +7,7 @@ export const DEFAULT_TAVERN_ID = 85905;
 
 // Chat limits
 export const MSG_MAX_LEN = 290; // server-enforced in chat.rs
-export const MSG_DISPLAY_MAX = 500; // textarea maxlength
+export const MSG_DISPLAY_MAX = 290; // textarea maxlength — must match MSG_MAX_LEN / backend limit
 export const MSG_HISTORY_LIMIT = 200; // keep last N in memory
 
 // Places
@@ -31,7 +31,7 @@ export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
 // App version fallback for the About dialog (runtime source of truth is
 // getVersion() from @tauri-apps/api/app; keep in sync with package.json).
-export const APP_VERSION = "0.2.0";
+export const APP_VERSION = "0.5.0";
 
 // Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";
@@ -64,11 +64,12 @@ export const WS_CLOSE_VOLUNTARY = "voluntary-close";
 // URLs (display only — keep canonical in Rust config.rs)
 export const RK_BASE = "https://www.renaissancekingdoms.com";
 export const CHAT_WSS_HOST = "chat.lesroyaumes.com";
-// Midas calques: use the oxv CDN directly — renaissancekingdoms.com 302s to
-// it but WITHOUT Access-Control-Allow-Origin on the redirect hop, which fails
-// CORS-mode image loads (crossOrigin="anonymous" required for toDataURL).
-// Final CDN serves ACAO:* (verified 2026-09). Tavern decor images are bundled
-// locally instead — see CDN_TAVERN / TAVERN_BG below.
+// Midas calques: this root is only used to BUILD calque URLs — the bytes are
+// fetched through the `fetch_portrait_asset` Rust proxy (commands/taverne.rs)
+// and returned as data: URLs, so the webview runs no CORS checks. Direct
+// oxv CDN loads were dropped: the CDN 404s on missing calques with no ACAO
+// header, which WebKit reports as CORS errors (console noise). Tavern decor
+// images are bundled locally instead — see CDN_TAVERN / TAVERN_BG below.
 export const MIDAS_CDN = "https://lesroyaumes.cdn.oxv.fr/images/";
 // Local tavern assets, bundled in src/assets/images/interieurTaverne/.
 // (Downloaded from the official site/CDN in 2026-09; see git history for sources.)

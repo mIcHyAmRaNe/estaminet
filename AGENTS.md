@@ -59,7 +59,7 @@ src-tauri/src/
 
 ## Tauri commands (lib.rs)
 
-`get_taverns`, `get_taverne_places`, `get_portrait_json`, `login`, `try_auto_login`, `get_saved_login`, `is_connected`, `get_session_login`, `logout`, `disconnect`, `ws_connect`, `ws_send`, `change_place`, `save_chat_log`, `get_log_dir`, `get_full_log`
+`get_taverns`, `get_taverne_places`, `get_portrait_json`, `fetch_portrait_asset`, `login`, `try_auto_login`, `get_saved_login`, `is_connected`, `get_session_login`, `logout`, `disconnect`, `ws_connect`, `ws_send`, `change_place`, `save_chat_log`, `get_log_dir`, `get_full_log`
 
 Events: `ws-message`, `ws-connected`, `ws-closed`, `ws-error`.
 
@@ -75,6 +75,6 @@ bunx tsc --noEmit
 ## Notes
 
 - Logs: `~/.estaminet/logs/taverne_<id>_<date>.log` (see `utils/logs.rs`)
-- Midas portrait: vendored renderer in `src/lib/midas/renderer.ts` (oxv CDN direct, ACAO:* on final responses) → offscreen canvas → `toDataURL` → `<img>` in `AvatarPortrait.tsx` (WebKitGTK canvas repaint bug workaround). No `window.RAR` / no external midas.js.
+- Midas portrait: vendored renderer in `src/lib/midas/renderer.ts` (calque bytes via `fetch_portrait_asset` Rust proxy → data: URLs — CORS-free, canvas untainted; webp→png fallback server-side) → offscreen canvas → `toDataURL` → `<img>` in `AvatarPortrait.tsx` (WebKitGTK canvas repaint bug workaround). No `window.RAR` / no external midas.js.
 - Chat limits: `message.len() > 290` rejected (see `commands/chat.rs`)
 - `src-tauri/target/` and `node_modules/` are ignored — do not commit

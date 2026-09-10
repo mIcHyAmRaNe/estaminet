@@ -111,16 +111,16 @@
   opacity: 0;
   animation: roomFadeIn 0.4s var(--ease-standard) forwards;
 }
-.character-card[data-place="0"] { left: 30%; top: 42%; transform: translateX(-50%); }
-.character-card[data-place="1"] { left: 65%; top: 42%; transform: translateX(-50%); }
+.character-card[data-place="0"] { left: 30%; top: 31%; transform: translateX(-50%); }
+.character-card[data-place="1"] { left: 65%; top: 31%; transform: translateX(-50%); }
 .character-card[data-place="2"] { left: 10%; top: 8%; transform: translateX(-50%); }
 .character-card[data-place="3"] { left: 35%; top: 3%; transform: translateX(-50%); }
 .character-card[data-place="4"] { left: 60%; top: 3%; transform: translateX(-50%); }
 .character-card[data-place="5"] { left: 80%; top: 8%; transform: translateX(-50%); }
-.character-card[data-place="6"] { left: 10%; top: 72%; transform: translateX(-50%); }
-.character-card[data-place="7"] { left: 35%; top: 75%; transform: translateX(-50%); }
-.character-card[data-place="8"] { left: 60%; top: 75%; transform: translateX(-50%); }
-.character-card[data-place="9"] { left: 80%; top: 72%; transform: translateX(-50%); }
+.character-card[data-place="6"] { left: 10%; top: 60%; transform: translateX(-50%); }
+.character-card[data-place="7"] { left: 35%; top: 63%; transform: translateX(-50%); }
+.character-card[data-place="8"] { left: 60%; top: 63%; transform: translateX(-50%); }
+.character-card[data-place="9"] { left: 80%; top: 60%; transform: translateX(-50%); }
 
 .character-card:nth-child(1){ animation-delay: 0s; }
 .character-card:nth-child(2){ animation-delay: 0.05s; }
@@ -528,14 +528,46 @@
 .room--places-8 .character-card[data-place="9"] {
   display: none;
 }
-.room--places-8 .character-card[data-place="0"] { left: 32%; top: 50%; }
-.room--places-8 .character-card[data-place="1"] { left: 68%; top: 50%; }
+.room--places-8 .character-card[data-place="0"] { left: 32%; top: 39%; }
+.room--places-8 .character-card[data-place="1"] { left: 68%; top: 39%; }
 .room--places-8 .character-card[data-place="2"] { left: 82%; top: 14%; }
 .room--places-8 .character-card[data-place="3"] { left: 18%; top: 14%; }
 .room--places-8 .character-card[data-place="4"] { left: 50%; top: 6%; }
-.room--places-8 .character-card[data-place="5"] { left: 18%; top: 82%; }
-.room--places-8 .character-card[data-place="6"] { left: 50%; top: 88%; }
-.room--places-8 .character-card[data-place="7"] { left: 82%; top: 82%; }
+.room--places-8 .character-card[data-place="5"] { left: 18%; top: 70%; }
+.room--places-8 .character-card[data-place="6"] { left: 50%; top: 75%; }
+.room--places-8 .character-card[data-place="7"] { left: 82%; top: 70%; }
+
+/* ── Short viewport guard: card height (~200px) otherwise pushes the
+   bottom row past .room-characters overflow:hidden. Bottom + vertical-
+   middle seats lift again under 700px / 640px heights. Positioning only,
+   same translateX(-50%) base preserved. ── */
+@media (max-height: 700px) {
+  .character-card[data-place="0"],
+  .character-card[data-place="1"] { top: 28%; }
+  .character-card[data-place="6"],
+  .character-card[data-place="9"] { top: 56%; }
+  .character-card[data-place="7"],
+  .character-card[data-place="8"] { top: 59%; }
+  .room--places-8 .character-card[data-place="0"],
+  .room--places-8 .character-card[data-place="1"] { top: 36%; }
+  .room--places-8 .character-card[data-place="5"],
+  .room--places-8 .character-card[data-place="7"] { top: 66%; }
+  .room--places-8 .character-card[data-place="6"] { top: 71%; }
+}
+@media (max-height: 640px) {
+  .room-characters-grid { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .character-card[data-place="0"],
+  .character-card[data-place="1"] { top: 26%; }
+  .character-card[data-place="6"],
+  .character-card[data-place="9"] { top: 53%; }
+  .character-card[data-place="7"],
+  .character-card[data-place="8"] { top: 56%; }
+  .room--places-8 .character-card[data-place="0"],
+  .room--places-8 .character-card[data-place="1"] { top: 34%; }
+  .room--places-8 .character-card[data-place="5"],
+  .room--places-8 .character-card[data-place="7"] { top: 63%; }
+  .room--places-8 .character-card[data-place="6"] { top: 68%; }
+}
 
 /* ── Typing indicator (lds-ellipsis, 4 dots) ── */
 .lds-ellipsis {
@@ -1166,6 +1198,39 @@
 }
 .room-status-bar .room-presence:hover .room-presence-tooltip {
   transform: translateX(-50%) translateY(0);
+}
+/* Floating presence list (portaled to document.body): position:fixed
+   escapes every overflow:hidden ancestor (.room-chat, .room-content,
+   .room), so the hover list is never clipped. Card visuals come from
+   .room-presence-tooltip above; only positioning/visibility differ.
+   Coords (top/bottom/left/max-height) are set inline from the
+   trigger's getBoundingClientRect(), flipped above/below on space. */
+.room-presence-tooltip--floating {
+  position: fixed;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 9999;
+  width: min(240px, calc(100vw - 16px));
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.room-presence-tooltip--floating::before {
+  display: none;
+}
+.room-presence-tooltip--floating .room-presence-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.room-status-bar .room-presence:focus-visible {
+  outline: 2px solid #f6905f;
+  outline-offset: 2px;
 }
 .room-status-count {
   font-size: var(--text-xs);

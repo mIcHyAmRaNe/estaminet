@@ -40,7 +40,8 @@ function renderOffscreen(json: string): Promise<PortraitEntry | null> {
       const dataUrl = resultat.canvas.toDataURL("image/png");
       return { json, dataUrl };
     } catch (e) {
-      // Tainted canvas (unexpected: ACAO:* verified on the CDN) — fail clean.
+      // Tainted canvas (should be impossible: every calque is a data: URL
+      // from the Rust proxy) — fail clean.
       console.warn("[AvatarPortrait] toDataURL failed", e);
       return null;
     }

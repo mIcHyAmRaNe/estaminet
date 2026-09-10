@@ -1,17 +1,19 @@
 // RK Midas character renderer, ported to a self-contained ES module.
 // Vendored from RK's midas.js (via rk_chat's port) and
 // adjusted for Estaminet:
-// - CDN root points at the oxv CDN directly (lesroyaumes.cdn.oxv.fr serves
-//   Access-Control-Allow-Origin: *). renaissancekingdoms.com 302-redirects
-//   there WITHOUT ACAO on the redirect hop — a CORS-mode <img> load
-//   (crossOrigin="anonymous", needed for toDataURL) fails its CORS check on
-//   that hop and every calque errors out, leaving a blank canvas. Verified
-//   2026-09: 302 has no ACAO, final CDN response has ACAO:*.
+// - Calque bytes are fetched through the Rust proxy (`fetch_portrait_asset`,
+//   commands/taverne.rs): the proxy returns data: URLs, which the webview
+//   loads same-origin — the canvas is never tainted and runs no CORS checks
+//   at all. Direct oxv CDN loads produced CORS console noise for every
+//   calque the CDN 404s (e.g. cheveuxIntermediaires variants that genuinely
+//   don't exist — the official site hits the same 404s silently).
 // - Resolution is fixed at _@1X (parity with the previous live renderer).
 // - No `window.RAR` global: all state lives in this module.
 // - Added Midas.genereCanvasDepuisJSON: Promise-based OFFSCREEN renderer —
 //   the canvas never needs DOM attachment, sidestepping the WebKitGTK
 //   canvas-repaint bugs (267986/218292) that made live avatars vanish.
+
+import { api } from "../../api/tauri";
 
 import { MIDAS_CDN } from "../config";
 
@@ -164,9 +166,6 @@ class ListeCalque {
       promises.push(
         new Promise<void>((accept) => {
           calque.img = document.createElement("img");
-          // Keep the canvas untainted so the avatar can be captured to a PNG
-          // (the RK CDN serves Access-Control-Allow-Origin: *).
-          calque.img.crossOrigin = "anonymous";
           calque.img.onerror = () => {
             calque.ok = false;
             accept();
@@ -175,7 +174,18 @@ class ListeCalque {
             calque.ok = true;
             accept();
           };
-          calque.img.src = calque.src;
+          // data: URL from the Rust proxy — same-origin load, canvas never
+          // tainted, no crossOrigin/CORS. Missing calques (CDN 404) surface
+          // here as a rejected promise, not as webview console noise.
+          api
+            .fetchPortraitAsset(calque.src)
+            .then((dataUrl) => {
+              calque.img!.src = dataUrl;
+            })
+            .catch(() => {
+              calque.ok = false;
+              accept();
+            });
         }),
       );
     }

@@ -17,6 +17,12 @@ being released (e.g. `0.3.0`); the git tag is always `v<version>`.
   Immediate publish is deliberate: the in-app updater reads
   `.../releases/latest/download/latest.json`, which 404s while a release is
   still a draft — a draft would silently break update checks for everyone.
+- **Release body is automatic.** The workflow extracts the matching
+  `CHANGELOG.md` `## <version>` section (tag `v<version>` minus the `v`)
+  and uses it as the GitHub Release body, followed by the assets +
+  attestation footer. If the section is missing the release still publishes
+  with just the footer and a CI warning — so step 2 below is what fills the
+  release notes.
 - **No paid code signing.** The Windows installer is unsigned (SmartScreen
   will warn). Instead each build leg attaches a **build-provenance
   attestation** plus a `SHA256SUMS-<platform>` file, so users can verify a
@@ -65,6 +71,7 @@ public key inside a manually-installed build.
 # 1. Bump the version in all three files to <version>:
 #      package.json, src-tauri/Cargo.toml, src-tauri/tauri.conf.json
 # 2. Move CHANGELOG.md entries from "Unreleased" under "## <version>".
+#    (This section becomes the GitHub Release body automatically.)
 git add -A && git commit -m "Release <version>"
 
 # 3. Push, tag (tag MUST equal the conf version), push the tag:
@@ -77,6 +84,7 @@ Then watch Actions → Release workflow, and check the published release:
 
 - Assets: `.deb`, `-setup.exe`, `.sig` files, `latest.json`,
   `SHA256SUMS-*` — all present.
+- Body: the `## <version>` CHANGELOG section plus the assets footer.
 - Provenance: download an installer and run
   `gh attestation verify <file> -R mIcHyAmRaNe/estaminet`.
 - Updater: an installed older version should offer `<version>` via its

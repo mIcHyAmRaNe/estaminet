@@ -58,13 +58,62 @@
   border: 1px solid color-mix(in oklab, var(--danger) 22%, transparent);
 }
 
+/* Floating status toast (auth + tavern phases): pinned to the top of the
+   window so it never shifts the form layout. Errors (.auth-error) stay
+   inline and persistent. */
 .auth-status {
-  background: color-mix(in oklab, var(--success) 12%, transparent);
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 1100;
+  width: max-content;
+  max-width: min(480px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  text-align: center;
+  background: var(--surface-solid);
   color: var(--success);
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   border: 1px solid color-mix(in oklab, var(--success) 18%, transparent);
+  box-shadow: var(--shadow-lg);
+  animation: auth-toast-in 0.28s var(--ease-standard);
+}
+
+/* Transient status toast: enters with a fade/slide, exits the same way
+   once the rendering component flags it leaving (~3.2s visible + 0.4s
+   exit). Errors (.auth-error) stay persistent. */
+.auth-status.is-leaving {
+  animation: auth-toast-out 0.4s var(--ease-standard) forwards;
+}
+
+@keyframes auth-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes auth-toast-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-status,
+  .auth-status.is-leaving {
+    animation: none;
+  }
 }
 
 .auth-form .field {
@@ -296,12 +345,22 @@
   color: var(--primary);
 }
 
-/* Auth head: title on the left, language switcher on the right. */
+/* Auth head: title (+ session chip on step 2) on the left, language
+   switcher on the right. Single line — the chip shrinks with ellipsis
+   instead of wrapping. */
 .auth-head-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  flex-wrap: nowrap;
+}
+
+.auth-head-row h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Remembered account (Riot-style) ── */
@@ -1049,11 +1108,49 @@ label.tavern-filter-option {
   }
 }
 
-/* ── ora-1 step 2: session line + recents + actions ── */
-.tavern-session-user {
-  margin: 6px 0 0;
+/* ── /* ── Step 2: static session chip (identity only, no menu) ── */
+.session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 0 1 auto;
+  margin-left: auto;
+  padding: 5px 12px 5px 9px;
   font-size: var(--text-sm);
   color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+
+.session-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-chip-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.session-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--success) 18%, transparent);
+}
+
+/* Narrow screens: the header row stays on one line, the chip label gives
+   way with ellipsis. */
+@media (max-width: 480px) {
+  .session-chip-label {
+    max-width: 110px;
+  }
 }
 
 .recents {
@@ -1071,11 +1168,13 @@ label.tavern-filter-option {
 
 .recents-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
   gap: 8px;
 }
 
 .recent-chip {
+  flex-shrink: 0;
   padding: 6px 14px;
   font-size: var(--text-sm);
   font-weight: 500;
@@ -1214,6 +1313,34 @@ label.tavern-filter-option {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--text-secondary);
+}
+
+/* ── About dialog: manual update check ── */
+.about-update {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.about-update-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.about-check-btn.is-spinning .about-check-icon {
+  display: inline-flex;
+  animation: about-spin 0.9s linear infinite;
+}
+
+@keyframes about-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Auto-update banner (quiet fixed corner, all phases) ── */

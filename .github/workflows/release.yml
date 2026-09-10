@@ -53,6 +53,33 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
+      - name: Extract release notes from CHANGELOG.md
+        id: changelog
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          notes_file="$(mktemp)"
+          awk -v ver="$version" '
+            /^## / {
+              if (found) exit
+              h=$2; gsub(/[\[\]]/, "", h)
+              if (h == ver) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md > "$notes_file"
+          if [ ! -s "$notes_file" ]; then
+            echo "::warning::No CHANGELOG.md section found for ## $version — release body will only contain the assets footer."
+          fi
+          {
+            echo "body<<RELEASE_BODY_EOF"
+            cat "$notes_file"
+            echo ""
+            echo "---"
+            echo "See assets for .deb (Linux) and -setup.exe (Windows)."
+            echo "Verify provenance: gh attestation verify <file> -R mIcHyAmRaNe/estaminet"
+            echo "RELEASE_BODY_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       # No separate `bun run build` step: tauri.conf.json
       # beforeBuildCommand (`bun run build`) covers it.
       # NOTE: releaseDraft is false on purpose — the updater's
@@ -65,9 +92,9 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: 'Estaminet v__VERSION__'
-          releaseBody: >
-            See assets for .deb (Linux) and -setup.exe (Windows).
-            Verify provenance: gh attestation verify <file> -R mIcHyAmRaNe/estaminet
+          # Body is the matching CHANGELOG.md ## <version> section plus the
+          # assets footer (see 'Extract release notes' step above).
+          releaseBody: ${{ steps.changelog.outputs.body }}
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

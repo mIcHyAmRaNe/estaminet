@@ -47,6 +47,11 @@ export const api = {
 
   getTavernePlaces: (idLieu: number) => invoke<number>("get_taverne_places", { idLieu }),
 
+  // Portrait calque bytes from the oxv CDN via the Rust proxy: returns a
+  // data: URL (webp→png fallback server-side). Same-origin load → untainted
+  // canvas, no CORS checks. Rust counterpart: commands/taverne.rs.
+  fetchPortraitAsset: (url: string) => invoke<string>("fetch_portrait_asset", { url }),
+
   // ── Lane F1 — social/economy commands (backend in src-tauri/src/commands/chat.rs) ──
   // Offer a drink to another player (emits taverneOffreVerre).
   taverneOffreVerre: (login: string) => invoke<void>("taverne_offre_verre", { login }),

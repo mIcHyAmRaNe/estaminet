@@ -2,6 +2,46 @@
 
 ## Unreleased
 
+## 0.5.0
+
+### Added
+- Portrait calques load through a new `fetch_portrait_asset` Rust proxy
+  (oxv CDN bytes returned as `data:` URLs): the canvas stays untainted
+  with no CORS checks, missing calques resolve as a rejected promise
+  instead of webview console noise; webp→png fallback server-side with
+  mime sniffing, SSRF guard to the oxv images root, no session cookies
+  leaked to the CDN.
+- Manual update check in the About dialog (ArrowSync button with spinning
+  state, up-to-date note, install-and-restart path when an update is
+  pending); the shell silent startup check is untouched (new `autoCheck`
+  option, manual-only instance never auto-checks; single-flight guard
+  against concurrent checks).
+- Floating status toast on the auth and tavern-select phases: pinned to
+  the top of the window so it never shifts the form layout, visible
+  ~3.2 s then a 0.4 s fade/slide exit, `prefers-reduced-motion`
+  respected; errors stay inline and persistent.
+- Static session identity chip on the tavern-select header (Person icon,
+  username with ellipsis, green presence dot) replacing the session line.
+- Recent taverns render as a single row: chips that do not fit entirely
+  are hidden (no partial chips ever), re-measured on resize.
+- Footer presence list as a floating layer portaled to `document.body`:
+  escapes `.room-chat` `overflow:hidden`, positioned from the trigger
+  rect, flipped above/below on available space, viewport-clamped,
+  repositioned on scroll/resize, Escape closes, keyboard-focusable with
+  a visible focus ring.
+
+### Changed
+- Chat input `maxlength` synced to the server limit (`MSG_DISPLAY_MAX`
+  500 → 290, counter uses the same constant).
+- Room seat layout repositioned (middle row and bottom rows lifted so
+  cards no longer clip) with short-viewport guards under 700 px / 640 px
+  heights; positioning only, same base transform preserved.
+- Midas renderer fetches calque bytes via the Rust proxy (no
+  `crossOrigin`/CORS); new `ArrowSync` Fluent icon and
+  `about.checkForUpdates` / `about.checking` / `about.upToDate`,
+  `session.connectedAs` strings (FR + EN); `status.sessionOpen`
+  shortened to the identity label used by the chip.
+
 ## 0.4.0
 
 ### Added

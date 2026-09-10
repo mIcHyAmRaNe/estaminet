@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -437,6 +438,83 @@ pub async fn get_portrait_json(state: State<'_, AppState>, login: String) -> Res
         (s.client.clone(), s.jar.clone())
     };
     inner_get_portrait_json(&client, &jar, &login)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ---------- portrait assets: oxv CDN proxy (CORS-free calque loading) ----------
+
+/// Sniff the image mime from magic bytes (the CDN serves webp or png).
+fn sniff_image_mime(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        Some("image/webp")
+    } else if bytes.len() >= 4 && bytes[0..4] == [0x89, b'P', b'N', b'G'] {
+        Some("image/png")
+    } else {
+        None
+    }
+}
+
+async fn get_asset_bytes(client: &wreq::Client, url: &str) -> Result<Vec<u8>, AppError> {
+    // No cookies: the CDN is public and the session must not leak to it.
+    let resp = client
+        .get(url)
+        .header("User-Agent", config::USER_AGENT)
+        .send()
+        .await
+        .map_err(|e| AppError::Network(format!("CDN request failed: {e}")))?;
+    if !resp.status().is_success() {
+        return Err(AppError::Network(format!(
+            "HTTP {} for CDN asset",
+            resp.status()
+        )));
+    }
+    resp.bytes()
+        .await
+        .map(|b| b.to_vec())
+        .map_err(|e| AppError::Network(format!("Error reading CDN asset: {e}")))
+}
+
+async fn inner_fetch_portrait_asset(client: &wreq::Client, url: &str) -> Result<String, AppError> {
+    // SSRF guard: only the oxv images CDN root is fetchable.
+    if !url.starts_with(config::CDN_IMAGES_ROOT) {
+        return Err(AppError::InvalidFormat(format!(
+            "portrait asset URL outside CDN root: {url}"
+        )));
+    }
+
+    // webp → png fallback: some calques only exist as png on the CDN.
+    let bytes = match get_asset_bytes(client, url).await {
+        Ok(b) => b,
+        Err(webp_err) if url.ends_with(".webp") => {
+            match get_asset_bytes(client, &url.replace(".webp", ".png")).await {
+                Ok(b) => b,
+                Err(_) => return Err(webp_err),
+            }
+        }
+        Err(e) => return Err(e),
+    };
+
+    let mime = sniff_image_mime(&bytes)
+        .ok_or_else(|| AppError::InvalidFormat("Unrecognized image format".into()))?;
+    Ok(format!("data:{mime};base64,{}", STANDARD.encode(bytes)))
+}
+
+/// Fetch a Midas calque from the oxv CDN and return it as a `data:` URL.
+/// The webview loads data: URLs same-origin: the canvas stays untainted and
+/// runs no CORS checks — removing the CDN 404 CORS console noise (missing
+/// calques surface as a rejected promise instead).
+#[tauri::command]
+pub async fn fetch_portrait_asset(
+    state: State<'_, AppState>,
+    url: String,
+) -> Result<String, String> {
+    let (client, _jar) = {
+        let s = state.session.lock().await;
+        let s = s.as_ref().ok_or_else(|| AppError::NotConnected.to_string())?;
+        (s.client.clone(), s.jar.clone())
+    };
+    inner_fetch_portrait_asset(&client, &url)
         .await
         .map_err(|e| e.to_string())
 }
