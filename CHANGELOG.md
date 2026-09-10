@@ -5,10 +5,10 @@
 ## [0.5.1] - 2026-09-10
 
 ### Fixed
-- Fix spam terminaux Windows : `attrib.exe` appelé à chaque event WS
-  remplacé par `windows-rs` (`SetFileAttributesW`) + masquage une seule
-  fois à la création du dossier (`src-tauri/src/utils/logs.rs`, dép
-  `windows` 0.58).
+- Fix Windows terminal spam: `attrib.exe` spawned on every WS event
+  (message, typing, enter/leave) replaced by `windows-rs`
+  (`SetFileAttributesW`) with one-time folder hide at creation
+  (`src-tauri/src/utils/logs.rs`, `windows` 0.58 dependency).
 
 ## 0.5.0
 

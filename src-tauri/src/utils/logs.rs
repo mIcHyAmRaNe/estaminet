@@ -31,12 +31,12 @@ fn hide_dir_windows(dir: &std::path::Path) {
     use windows::Win32::Storage::FileSystem::{GetFileAttributesW, SetFileAttributesW, FILE_ATTRIBUTE_HIDDEN};
     let wide: Vec<u16> = dir.as_os_str().encode_wide().collect();
     let h = HSTRING::from_wide(&wide);
-    let pwstr = PCWSTR::from_raw(h.as_ptr());
+    let pwstr = PCWSTR::from_raw(h.as_ref().unwrap().as_ptr());
     unsafe {
         let attrs = GetFileAttributesW(pwstr);
         const INVALID: u32 = 0xFFFFFFFF;
         if attrs != INVALID {
-            let _ = SetFileAttributesW(pwstr, attrs | FILE_ATTRIBUTE_HIDDEN);
+            let _ = SetFileAttributesW(pwstr, windows::Win32::Storage::FileSystem::FILE_FLAGS_AND_ATTRIBUTES((attrs | FILE_ATTRIBUTE_HIDDEN.0) as u32));
         }
     }
 }
