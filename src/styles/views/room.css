@@ -41,7 +41,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/fonds/fondNormal_nuit.jpg") no-repeat center center;
+  background: var(--tavern-bg) no-repeat center center;
   background-size: cover;
   opacity: 0.65;
 }
@@ -101,7 +101,7 @@
   display: grid;
   grid-template-rows: 24px auto 22px auto;
   grid-template-areas: "emplacementSpecial" "portrait" "nom" "commentaire";
-  background: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/cadreVide.png") no-repeat center 18px;
+  background: var(--tavern-cadre-vide) no-repeat center 18px;
   background-size: contain;
   align-items: center;
   justify-items: center;
@@ -175,7 +175,7 @@
    (.character-card, original background unchanged). cadrePlein shows IN
    ADDITION inside, on the medallion of occupied cards only. ── */
 .character-card:not(.empty) .character-portrait {
-  background: url("https://www.renaissancekingdoms.com/images/interieurTaverne/cadrePlein.png") no-repeat center;
+  background: var(--tavern-cadre-plein) no-repeat center;
   background-size: 120px auto;
 }
 /* ── Portrait canvas positioning (original taverne.css adapted) ── */
@@ -254,7 +254,7 @@
 .room-chat {
   display: flex; flex-direction: column;
   background:
-    url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/lisere.png") left repeat-y,
+    var(--tavern-lisere) left repeat-y,
     rgba(26, 44, 63, 0.92);
   box-shadow: -5px 0 20px rgba(0,0,0,0.8);
   position: relative; overflow: hidden; min-height: 0;
@@ -360,7 +360,7 @@
 
 .room-input-area {
   flex-shrink: 0;
-  background: url("https://lesroyaumes.cdn.oxv.fr/images/interieurTaverne/zoneTchat_repeat.png") repeat-x top;
+  background: var(--tavern-zone-repeat) repeat-x top;
   padding: var(--space-3) var(--space-4);
   box-shadow: 0 -5px 15px rgba(0,0,0,0.4);
   position: relative;

@@ -3,7 +3,7 @@ import { createPortal } from "preact/compat";
 import type { ChatRoomProps } from "../../lib/types";
 import { t } from "../../lib/i18n";
 import { api } from "../../api/tauri";
-import { MSG_DISPLAY_MAX, TYPING_STOP_DELAY_MS } from "../../lib/config";
+import { MSG_MAX_LEN, TYPING_STOP_DELAY_MS } from "../../lib/config";
 import { useAutoScroll } from "../../lib/hooks/useAutoScroll";
 import { isChopineText } from "../../lib/utils/chat-guards";
 import ChatHeader from "./ChatHeader";
@@ -494,7 +494,7 @@ export default function ChatRoom(props: ChatRoomProps) {
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
                 placeholder={t("chat.placeholder")}
-                maxlength={MSG_DISPLAY_MAX}
+                maxlength={MSG_MAX_LEN}
                 disabled={!props.isConnected || props.floodMuted ? true : undefined}
                 rows={2}
                 style={{ flex: 1 }}
@@ -541,7 +541,7 @@ export default function ChatRoom(props: ChatRoomProps) {
               document.body,
             )}
             <span class="room-status-count">
-              {props.inputMessage.length}/{MSG_DISPLAY_MAX} · {t("chat.messageCount", { n: msgCount, s: msgCount !== 1 ? "s" : "" })}
+              {props.inputMessage.length}/{MSG_MAX_LEN} · {t("chat.messageCount", { n: msgCount, s: msgCount !== 1 ? "s" : "" })}
             </span>
           </div>
         </div>

@@ -6,14 +6,11 @@
 export const DEFAULT_TAVERN_ID = 85905;
 
 // Chat limits
-export const MSG_MAX_LEN = 290; // server-enforced in chat.rs
-export const MSG_DISPLAY_MAX = 290; // textarea maxlength — must match MSG_MAX_LEN / backend limit
+export const MSG_MAX_LEN = 290; // server-enforced in chat.rs; also used as textarea maxlength
 export const MSG_HISTORY_LIMIT = 200; // keep last N in memory
 
 // Places
 export const PLACE_RESERVED_DEFAULT = [0] as const;
-export const PLACE_MAX = 10;
-export const PLACE_SIMPLE_CANDIDATES = [1, 2, 3, 4, 5, 6, 7] as const;
 export const PLACES_ALLOWED = [3, 8, 9, 10] as const;
 
 // Auto-seat
@@ -52,8 +49,7 @@ export const SCROLL_THRESHOLD = 100;
 export const ERROR_TTL_MS = 3500;
 // Lane F3 — flood mute: official onBanFlood disables the chat input for 30s
 // (error line + countdown, NOT a fatal popup).
-export const FLOOD_MUTE_MS = 30000;export const PORTRAIT_RETRY_MS = 1200;
-export const COPIED_TTL_MS = 1800;
+export const FLOOD_MUTE_MS = 30000;
 export const WS_RECONNECT_DELAY_MS = 900;
 
 // Payload `ws-closed` for a VOLUNTARY close (logout / Leave button).
@@ -69,11 +65,10 @@ export const CHAT_WSS_HOST = "chat.lesroyaumes.com";
 // and returned as data: URLs, so the webview runs no CORS checks. Direct
 // oxv CDN loads were dropped: the CDN 404s on missing calques with no ACAO
 // header, which WebKit reports as CORS errors (console noise). Tavern decor
-// images are bundled locally instead — see CDN_TAVERN / TAVERN_BG below.
+// images are bundled locally instead — see the --tavern-* vars in
+// src/styles/_base.scss (single source for CSS).
 export const MIDAS_CDN = "https://lesroyaumes.cdn.oxv.fr/images/";
-// Local tavern assets, bundled in src/assets/images/interieurTaverne/.
-// (Downloaded from the official site/CDN in 2026-09; see git history for sources.)
-export const CDN_IMAGES = "../assets/images/interieurTaverne/";
-export const TAVERN_BG = "../assets/images/interieurTaverne/fondNormal_nuit.jpg";
-export const TAVERN_BG_NIGHT = TAVERN_BG;
-export const CDN_TAVERN = "../assets/images/interieurTaverne/";
+// Remote-only chat art (no local bundle, no --tavern-* equivalent):
+// canonical URLs kept here so room.css hardcodes stay in one place.
+export const CDN_SEND_BTN = "https://lesroyaumes.cdn.oxv.fr/images/ui_bouton_retourBleu_@2X.png";
+export const CDN_SEND_ICON = "https://lesroyaumes.cdn.oxv.fr/images/ui_iconeEnvoi_@2X.png";

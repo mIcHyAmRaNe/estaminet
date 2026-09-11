@@ -119,7 +119,9 @@
   --surface-solid: #1e1e2e;
   --surface-hover: #313244;
 
-  /* Local tavern assets — bundled in src/assets/images/interieurTaverne/ (keep in sync with src/lib/config.ts CDN_TAVERN / TAVERN_BG) */
+  /* Local tavern assets — bundled in src/assets/images/interieurTaverne/.
+     Single source for CSS backgrounds (room.css uses var(--tavern-*)).
+     Remote-only chat art lives in src/lib/config.ts (CDN_SEND_BTN/_ICON). */
   --tavern-bg: url("../assets/images/interieurTaverne/fondNormal_nuit.jpg");
   --tavern-cadre-vide: url("../assets/images/interieurTaverne/cadreVide.png");
   --tavern-cadre-plein: url("../assets/images/interieurTaverne/cadrePlein.png");

@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+## [0.5.4] - 2026-09-11
+
+### Added
+- New Estaminet app icon: all 16 Tauri variants regenerated from the
+  1024px source (`bun run tauri icon`, `src-tauri/icons/`).
+
+### Removed
+- Unused assets: `src/assets/preact.svg`, `public/tauri.svg`,
+  `public/assets/tavern-placeholder.svg`,
+  `interieurTaverne/iconeMini_rentrer.png` + `iconeMini_sortir.png`.
+- Dead code: `src/App.css` (unimported), `src/lib/store/chatStore.ts`
+  (zero importers), `src/lib/fluent.ts`, `src/types/fluent.d.ts`,
+  5 dead `icons.tsx` exports (`Send`, `PersonCircleOff`, `Translate`,
+  `SpeakerOn`, `SpeakerOff`) + their `?raw` imports, unused
+  `config.ts` exports (`CDN_IMAGES`, `TAVERN_BG`, `TAVERN_BG_NIGHT`,
+  `CDN_TAVERN`, `PORTRAIT_RETRY_MS`, `COPIED_TTL_MS`, `PLACE_MAX`,
+  `PLACE_SIMPLE_CANDIDATES`, `MSG_DISPLAY_MAX` dup).
+
+### Changed
+- `MSG_MAX_LEN` is the single canonical chat limit (`ChatRoom.tsx`
+  updated); fixed `config.ts:55` two-consts-on-one-line glitch.
+- `room.css` CDN backgrounds now use `var(--tavern-*)`; the 2
+  remote-only button URLs are canonical in `config.ts`
+  (`CDN_SEND_BTN`/`CDN_SEND_ICON`).
+- Fluent JSX types canonical in `jsx-fix.d.ts` only (`vite-env.d.ts`
+  block removed); `AvatarPortrait.tsx` console warns gated behind
+  `import.meta.env.DEV`.
+
+### Fixed
+- `src/main.tsx` `@ts-ignore` removed: the root cause was
+  `src/types/fluent.d.ts` shadowing Preact's real types and hiding
+  `render`; deleting it restores proper type resolution.
+
 ## [0.5.3] - 2026-09-11
 
 ### Fixed

@@ -42,7 +42,7 @@ function renderOffscreen(json: string): Promise<PortraitEntry | null> {
     } catch (e) {
       // Tainted canvas (should be impossible: every calque is a data: URL
       // from the Rust proxy) — fail clean.
-      console.warn("[AvatarPortrait] toDataURL failed", e);
+      if (import.meta.env.DEV) console.warn("[AvatarPortrait] toDataURL failed", e);
       return null;
     }
   });
@@ -137,18 +137,22 @@ export default function AvatarPortrait({ login }: { login: string }) {
         .catch((err: unknown) => {
           if (stale) return;
           if (attempt < FETCH_MAX_ATTEMPTS) {
-            console.warn(
-              `[AvatarPortrait] portrait "${login}": attempt ${attempt}/${FETCH_MAX_ATTEMPTS} failed (${String(err)}) — retrying`,
-            );
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[AvatarPortrait] portrait "${login}": attempt ${attempt}/${FETCH_MAX_ATTEMPTS} failed (${String(err)}) — retrying`,
+              );
+            }
             retryTimerId = setTimeout(() => {
               if (!stale) tryFetch();
             }, FETCH_RETRY_DELAYS_MS[attempt - 1] ?? 3000);
           } else {
-            console.warn(
-              `[AvatarPortrait] portrait "${login}": giving up after ${attempt} attempts (${String(err)}) — ${
-                cached ? "cache shown" : "letter shown"
-              }`,
-            );
+            if (import.meta.env.DEV) {
+              console.warn(
+                `[AvatarPortrait] portrait "${login}": giving up after ${attempt} attempts (${String(err)}) — ${
+                  cached ? "cache shown" : "letter shown"
+                }`,
+              );
+            }
           }
         });
     };
