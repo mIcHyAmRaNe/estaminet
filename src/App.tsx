@@ -321,6 +321,7 @@ export default function App() {
       <UpdatePrompt
         status={updater.status}
         version={updater.version}
+        error={updater.error}
         onInstall={updater.installAndRestart}
       />
     </>
@@ -381,6 +382,7 @@ export default function App() {
       <UpdatePrompt
         status={updater.status}
         version={updater.version}
+        error={updater.error}
         onInstall={updater.installAndRestart}
       />
     </>

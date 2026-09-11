@@ -103,6 +103,11 @@ export default function AboutDialog({ open, onClose }: Props) {
               >
                 {installing ? t("update.installing") : t("update.install")}
               </button>
+              {updater.error && (
+                <p class="about-update-note about-update-error" role="alert">
+                  {t("update.failed", { error: updater.error })}
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -116,10 +121,16 @@ export default function AboutDialog({ open, onClose }: Props) {
                 {checking ? t("about.checking") : t("about.checkForUpdates")}
               </button>
               {manualDone && !checking && (
-                <p class="about-update-note about-update-ok" role="status">
-                  <Check size={16} />
-                  {t("about.upToDate")}
-                </p>
+                updater.error ? (
+                  <p class="about-update-note about-update-error" role="alert">
+                    {t("update.failed", { error: updater.error })}
+                  </p>
+                ) : (
+                  <p class="about-update-note about-update-ok" role="status">
+                    <Check size={16} />
+                    {t("about.upToDate")}
+                  </p>
+                )
               )}
             </>
           )}

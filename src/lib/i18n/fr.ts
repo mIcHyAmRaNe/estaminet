@@ -74,6 +74,7 @@ export const fr: Record<string, string> = {
   'update.install': 'Installer',
   'update.installing': 'Installation…',
   'update.dismiss': 'Ignorer',
+  'update.failed': 'Échec de la mise à jour : {error}',
   'about.title': 'À propos d’Estaminet',
   'about.version': 'Version {version}',
   'about.description': 'Client de bureau pour le chat des tavernes RK',

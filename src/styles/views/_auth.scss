@@ -1334,6 +1334,10 @@ label.tavern-filter-option {
   color: var(--text-secondary);
 }
 
+.about-update-error {
+  color: var(--danger);
+}
+
 .about-check-btn.is-spinning .about-check-icon {
   display: inline-flex;
   animation: about-spin 0.9s linear infinite;
@@ -1366,6 +1370,12 @@ label.tavern-filter-option {
 .update-banner-text {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.update-banner-error {
+  flex-basis: 100%;
+  color: var(--danger);
+  word-break: break-word;
 }
 
 .update-install {

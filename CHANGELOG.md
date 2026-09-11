@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [0.5.3] - 2026-09-11
+
+### Fixed
+- The in-app updater never worked: release artifacts are signed with the
+  CI minisign keypair, but the public key embedded in the app
+  (`tauri.conf.json` `plugins.updater.pubkey`) belonged to a different
+  keypair, so every download failed signature verification before
+  install — the Install button silently reset the banner and looked
+  dead. The embedded pubkey now matches the CI signing key. Every
+  install ≤ 0.5.2 must update to 0.5.3 manually once; auto-update works
+  from there on (same drift affected Linux and Windows alike).
+- Updater failures are no longer swallowed: install and manual-check
+  errors surface in the update banner and the About dialog
+  (`update.failed`, FR + EN, red alert line) instead of silently
+  resetting to "available"; the silent startup check is unchanged.
+
 ## [0.5.1] - 2026-09-10
 
 ### Fixed

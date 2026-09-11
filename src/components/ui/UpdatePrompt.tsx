@@ -6,13 +6,15 @@ import type { UpdaterStatus } from "../../lib/hooks/useUpdater";
 interface Props {
   status: UpdaterStatus;
   version: string | null;
+  error: string | null;
   onInstall: () => void;
 }
 
 // Quiet fixed-corner banner, shown only while an update is available
 // (or installing). Dismiss hides it for the session; installing
-// disables the buttons with a progress label.
-export default function UpdatePrompt({ status, version, onInstall }: Props) {
+// disables the buttons with a progress label. An install failure
+// returns to "available" with the reason shown.
+export default function UpdatePrompt({ status, version, error, onInstall }: Props) {
   const [dismissed, setDismissed] = useState(false);
 
   // A newly found version re-arms the banner.
@@ -30,6 +32,11 @@ export default function UpdatePrompt({ status, version, onInstall }: Props) {
       <span class="update-banner-text">
         {t("update.available", { version: version ?? "?" })}
       </span>
+      {error && (
+        <span class="update-banner-error" role="alert">
+          {t("update.failed", { error })}
+        </span>
+      )}
       <button
         type="button"
         class="update-install"

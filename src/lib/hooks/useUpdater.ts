@@ -7,7 +7,7 @@ export type UpdaterStatus = "idle" | "checking" | "available" | "installing" | "
 export interface UpdaterState {
   status: UpdaterStatus;
   version: string | null;
-  error: null;
+  error: string | null;
 }
 
 export interface UseUpdaterOptions {
@@ -18,14 +18,15 @@ export interface UseUpdaterOptions {
 }
 
 // Silent update check on mount: check only, never auto-download.
-// Every failure (no update server, offline, 404…) is swallowed —
-// the banner simply never appears.
+// Mount-time failures are silent (the banner simply never appears);
+// manual checks and install failures surface via `error`.
 export function useUpdater(
   options?: UseUpdaterOptions,
 ): UpdaterState & { installAndRestart: () => Promise<void>; checkForUpdates: () => Promise<boolean> } {
   const autoCheck = options?.autoCheck ?? true;
   const [status, setStatus] = useState<UpdaterStatus>("idle");
   const [version, setVersion] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   // The pending Update object (holds downloadAndInstall). Kept in a ref:
   // it is not render state, only needed on user consent.
   const updateRef = useRef<Exclude<Awaited<ReturnType<typeof check>>, null> | null>(null);
@@ -36,11 +37,13 @@ export function useUpdater(
 
   // Manual trigger — also run once by the mount effect when autoCheck
   // is on. Resolves true when an update is pending, false otherwise
-  // (failures included: same silence contract as the startup check).
+  // (failures included: mount-time checks stay silent, manual checks
+  // surface via `error`).
   const checkForUpdates = useCallback(async (): Promise<boolean> => {
     if (checkingRef.current) return updateRef.current !== null;
     checkingRef.current = true;
     setStatus("checking");
+    setError(null);
     try {
       const update = await check();
       if (update) {
@@ -51,13 +54,16 @@ export function useUpdater(
       }
       setStatus("idle");
       return false;
-    } catch {
+    } catch (e) {
       setStatus("idle");
+      // Startup checks stay silent (offline / server hiccup are normal);
+      // manual checks (autoCheck: false) surface the failure.
+      if (!autoCheck) setError(e instanceof Error ? e.message : String(e));
       return false;
     } finally {
       checkingRef.current = false;
     }
-  }, []);
+  }, [autoCheck]);
 
   useEffect(() => {
     if (!autoCheck) return;
@@ -68,16 +74,18 @@ export function useUpdater(
     const update = updateRef.current;
     if (!update) return;
     setStatus("installing");
+    setError(null);
     try {
       await update.downloadAndInstall();
       setStatus("ready");
       await relaunch();
-    } catch {
-      // Install failed (offline mid-download…): back to available so the
-      // user can retry. Never surfaced — the banner just comes back.
+    } catch (e) {
+      // Install failed (signature mismatch, offline mid-download…):
+      // surface the reason and go back to available so the user can retry.
+      setError(e instanceof Error ? e.message : String(e));
       setStatus("available");
     }
   }, []);
 
-  return { status, version, error: null, installAndRestart, checkForUpdates };
+  return { status, version, error, installAndRestart, checkForUpdates };
 }

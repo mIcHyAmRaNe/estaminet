@@ -74,6 +74,7 @@ export const en: Record<string, string> = {
   'update.install': 'Install',
   'update.installing': 'Installing…',
   'update.dismiss': 'Dismiss',
+  'update.failed': 'Update failed: {error}',
   'about.title': 'About Estaminet',
   'about.version': 'Version {version}',
   'about.description': 'Desktop client for the RK tavern chat',
