@@ -416,6 +416,43 @@ async fn inner_get_portrait_json(
     extract_portrait_json(&text, login)
 }
 
+pub(crate) async fn fetch_own_portrait_json(
+    client: &wreq::Client,
+    jar: &std::sync::Arc<wreq::cookie::Jar>,
+    login: &str,
+) -> Result<String, AppError> {
+    let cookie_header = extract_cookies(jar);
+    if cookie_header.is_empty() {
+        return Err(AppError::Network("No cookie".into()));
+    }
+
+    let encoded = percent_encode_login(login);
+    let url = format!("{}?login={}", config::URL_ZOOM_PERSONNAGE, encoded);
+
+    let resp = client
+        .get(&url)
+        .header("Cookie", cookie_header.clone())
+        .header("User-Agent", config::USER_AGENT)
+        .header("Referer", config::REFERER)
+        .send()
+        .await
+        .map_err(|e| AppError::Network(format!("Own portrait request failed: {e}")))?;
+
+    if !resp.status().is_success() {
+        return Err(AppError::Network(format!(
+            "HTTP {} for own portrait",
+            resp.status()
+        )));
+    }
+
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| AppError::Network(format!("Error reading own portrait: {e}")))?;
+
+    extract_portrait_json(&text, login)
+}
+
 // ---------- Tauri commands (map AppError -> String consistently) ----------
 
 #[tauri::command]

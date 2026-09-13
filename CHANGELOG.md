@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## [0.5.5] - 2026-09-13
+
+### Fixed
+- Own avatar seen by others is no longer the default male portrait:
+  `ws_connect` now fetches your real portrait JSON (`ZoomPersonnage.php`,
+  session cookies, `extract_portrait_json`) and sends it in `changeSalon`;
+  falls back to the default only when the fetch fails
+  (`config::URL_ZOOM_PERSONNAGE`, `commands/taverne.rs`,
+  `commands/chat.rs`, `network/socket.rs`).
+- Avatar no longer flashes the previous account on switch / room
+  enter-leave: portrait cache is cleared on join, account pick, logout,
+  and leave-to-taverns (`App.tsx`), and `AvatarPortrait` drops the old
+  `<img>` synchronously on login change so the letter fallback shows
+  until the fresh portrait loads.
+
 ## [0.5.4] - 2026-09-11
 
 ### Added

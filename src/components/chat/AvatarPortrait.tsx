@@ -100,6 +100,11 @@ export default function AvatarPortrait({ login }: { login: string }) {
     if (!login) return;
     const lower = stableKey;
     setLoaded(false);
+    // New login (incl. account switch reusing the mounted node): drop the
+    // previous account's <img> synchronously so it never flashes before
+    // the cached/fresh portrait for this key. Fallback letter shows until
+    // then (loaded=false).
+    if (boxRef.current) boxRef.current.innerHTML = "";
     let stale = false;
     let retryTimerId: ReturnType<typeof setTimeout> | null = null;
 

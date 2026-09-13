@@ -47,7 +47,7 @@ async fn ws_connect_inner(
     // send "41" through the old channel then close it, so the old
     // WebSocket task terminates (forward 41 → exit) before dialing.
     // Without this, two sockets briefly coexist on the server side.
-    let (login, token, jar) = {
+    let (login, token, jar, client) = {
         let mut session_guard = state.session.lock().await;
         let s = session_guard
             .as_mut()
@@ -55,6 +55,7 @@ async fn ws_connect_inner(
         let login = s.login.clone();
         let token = s.token.clone();
         let jar = s.jar.clone();
+        let client = s.client.clone();
         // Replace tx with a closed placeholder: the old rx will see the
         // buffered "41" then `None` and the task will terminate. The closed
         // placeholder also flips `is_connected` back to false during the window.
@@ -72,9 +73,17 @@ async fn ws_connect_inner(
             drop(session_guard);
             tokio::time::sleep(std::time::Duration::from_millis(250)).await;
         }
-        (login, token, jar)
+        (login, token, jar, client)
     };
-    crate::network::socket::ws_connect(&login, &token, &jar, id_lieu, app.clone())
+    let portrait_json =
+        match crate::commands::taverne::fetch_own_portrait_json(&client, &jar, &login).await {
+            Ok(p) => p,
+            Err(e) => {
+                logs::log_info(&format!("own portrait fetch failed, using default: {e}"));
+                String::new()
+            }
+        };
+    crate::network::socket::ws_connect(&login, &token, &jar, id_lieu, app.clone(), portrait_json)
         .await
         .map_err(|e| AppError::Network(e).to_string())
 }

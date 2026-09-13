@@ -12,7 +12,7 @@ use crate::{config, utils::cookies::extract_cookies, utils::logs};
 
 type WsStream = tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
-fn build_portrait(login: &str) -> String {
+fn build_default_portrait(login: &str) -> String {
     json!({
         "login": login,
         "sexe": "M",
@@ -55,8 +55,15 @@ fn build_portrait(login: &str) -> String {
     .to_string()
 }
 
-fn build_change_salon(login: &str, id_lieu: u64) -> String {
-    let portrait = build_portrait(login);
+fn build_change_salon(login: &str, id_lieu: u64, portrait_json: &str) -> String {
+    let trimmed = portrait_json.trim();
+    let portrait = if !trimmed.is_empty()
+        && serde_json::from_str::<serde_json::Value>(trimmed).is_ok()
+    {
+        trimmed.to_string()
+    } else {
+        build_default_portrait(login)
+    };
     json!({
         "typeLieu": "taverne",
         "IDLieu": id_lieu,
@@ -289,6 +296,7 @@ pub async fn ws_connect(
     jar: &Arc<Jar>,
     id_lieu: u64,
     app: tauri::AppHandle,
+    portrait_json: String,
 ) -> Result<(), String> {
     let url = build_url(login, token);
     let request = build_headers(url, jar)?;
@@ -296,7 +304,7 @@ pub async fn ws_connect(
 
     logs::log_info("WebSocket connected!");
 
-    let change_salon = format!("42[\"changeSalon\",{}]", build_change_salon(login, id_lieu));
+    let change_salon = format!("42[\"changeSalon\",{}]", build_change_salon(login, id_lieu, &portrait_json));
     let (tx, rx) = mpsc::channel::<String>(config::WS_CHANNEL_CAP);
     let app_clone = app.clone();
 

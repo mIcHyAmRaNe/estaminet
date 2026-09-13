@@ -19,6 +19,8 @@ pub const URL_ECRAN_PRINCIPAL_AJAX: &str =
 pub const URL_VILLAGE: &str = "https://www.renaissancekingdoms.com/village.php";
 pub const URL_FICHE_PERSONNAGE: &str =
     "https://www.renaissancekingdoms.com/FichePersonnage.php";
+pub const URL_ZOOM_PERSONNAGE: &str =
+    "https://www.renaissancekingdoms.com/ZoomPersonnage.php";
 
 /// oxv images CDN root — mirror of MIDAS_CDN in src/lib/config.ts. The
 /// `fetch_portrait_asset` proxy only serves URLs under this prefix (SSRF guard).

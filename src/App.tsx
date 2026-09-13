@@ -9,6 +9,7 @@ import { useUpdater } from "./lib/hooks/useUpdater";
 import AuthStep from "./components/auth/AuthStep";
 import TavernSelect from "./components/tavern/TavernSelect";
 import ChatRoom from "./components/chat/ChatRoom";
+import { clearPortraitCache } from "./components/chat/AvatarPortrait";
 import UpdatePrompt from "./components/ui/UpdatePrompt";
 import type { Tavern } from "./lib/types";
 
@@ -91,6 +92,7 @@ export default function App() {
     e.preventDefault();
     if (connectingRef.current || connecting) return;
     connectingRef.current = true;
+    clearPortraitCache();
     taverne.setError("");
     taverne.setStatus("");
     setConnecting(true);
@@ -119,6 +121,7 @@ export default function App() {
     if (pickedAccount === null) return;
     const target = pickedAccount;
     connectingRef.current = true;
+    clearPortraitCache();
     taverne.setError("");
     taverne.setStatus("");
     setConnecting(true);
@@ -185,6 +188,7 @@ export default function App() {
     } catch {
       // Session already down — return to auth anyway.
     }
+    clearPortraitCache();
     clearRoomState();
     setPassword("");
     setUseAnother(accounts.length === 0);
@@ -200,6 +204,7 @@ export default function App() {
     } catch {
       // Best effort — still refresh and leave.
     }
+    clearPortraitCache();
     clearRoomState();
     setUsername("");
     setPassword("");
@@ -218,6 +223,7 @@ export default function App() {
     } catch {
       // Socket already down — return to taverns anyway.
     }
+    clearPortraitCache();
     clearRoomState();
     taverne.setStatus(t("status.sessionOpen", { username }));
     setPhase("tavern");
