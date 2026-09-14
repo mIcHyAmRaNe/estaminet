@@ -322,7 +322,11 @@ class Midas {
       })
       .then(() => {
         this._genereCorps(listeCalque, contexte);
-        for (const item of infosApercu.equipement) this._genereEquipement(listeCalque, contexte, item);
+        // Only render worn items (miniature == "o") to match the official
+        // browser portrait; items without the field are kept for backward
+        // compatibility (all current worn/default items have it).
+        const wornEquipement = infosApercu.equipement.filter((item: any) => item.miniature === "o");
+        for (const item of wornEquipement) this._genereEquipement(listeCalque, contexte, item);
         return listeCalque.genereCanvas(contexte);
       })
       .then((canvas) => ({ canvas, sexe }))

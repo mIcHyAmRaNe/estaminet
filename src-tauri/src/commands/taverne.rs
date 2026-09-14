@@ -222,6 +222,30 @@ fn found_login_of(json_str: &str) -> Option<String> {
     None
 }
 
+fn canonicalize_portrait_json(json_str: &str, expected_login: &str) -> String {
+    let trimmed = json_str.trim();
+    let mut value: serde_json::Value = match serde_json::from_str::<serde_json::Value>(trimmed) {
+        Ok(v) => v,
+        Err(_) => return trimmed.to_string(),
+    };
+    let obj = value.as_object_mut();
+    if obj.is_none() {
+        return trimmed.to_string();
+    }
+    let obj = obj.unwrap();
+    // Normalize login to session login (display case diverges from page)
+    obj.insert("login".to_string(), serde_json::Value::String(expected_login.trim().to_string()));
+    // Filter equipement to worn-only (miniature == "o")
+    if let Some(arr) = obj.get_mut("equipement").and_then(|v| v.as_array_mut()) {
+        arr.retain(|item| {
+            item.get("miniature")
+                .and_then(|v| v.as_str())
+                .map_or(false, |m| m == "o")
+        });
+    }
+    value.to_string()
+}
+
 fn extract_portrait_json(html: &str, expected_login: &str) -> Result<String, AppError> {
     // Primary marker used by RK taverne page.
     let markers = ["apercu_personnage_rar", "genereApercuDepuisJSON", "portrait"];
@@ -268,7 +292,7 @@ fn extract_portrait_json(html: &str, expected_login: &str) -> Result<String, App
                             // for another login: check (trim +
                             // case-insensitive) before returning.
                             if portrait_json_matches_login(trimmed, expected_login) {
-                                return Ok(trimmed.to_string());
+                                return Ok(canonicalize_portrait_json(trimmed, expected_login));
                             }
                             saw_mismatched = true;
                             note_seen(trimmed, &mut seen_logins);
@@ -292,7 +316,7 @@ fn extract_portrait_json(html: &str, expected_login: &str) -> Result<String, App
                         if candidate.starts_with('{') && candidate.contains("login") {
                             if serde_json::from_str::<serde_json::Value>(candidate).is_ok() {
                                 if portrait_json_matches_login(candidate, expected_login) {
-                                    return Ok(candidate.to_string());
+                                    return Ok(canonicalize_portrait_json(candidate, expected_login));
                                 }
                                 saw_mismatched = true;
                                 note_seen(candidate, &mut seen_logins);

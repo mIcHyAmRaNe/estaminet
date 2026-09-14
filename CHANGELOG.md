@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.7] - 2026-09-14
+
+### Fixed
+- Portrait JSON canonicalized at fetch layer (`extract_portrait_json`):
+  `login` normalized to session login, `equipement` filtered to worn
+  items (`miniature == "o"`). Renderer (`renderer.ts`) also filters
+  before drawing, so self/others/display all stay aligned with the
+  browser's 12-item payload.
+
 ## [0.5.6] - 2026-09-14
 
 ### Fixed
