@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useId } from "preact/hooks";
+import { usePopover } from "../../lib/hooks/usePopover";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../lib/i18n";
 import { LocalLanguage, Check } from "../../lib/utils/icons";
 
@@ -28,28 +29,8 @@ export default function LanguageSwitcher({ align = "right" }: Props) {
     closeMenu();
   };
 
-  // Outside click (capture) + Escape, mirroring the tavern filter popover:
-  // a click elsewhere just closes; Escape also restores trigger focus.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (!wrapRef.current?.contains(target)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        closeMenu();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [open]);
+  // Outside click (capture) + Escape (shared hook; focus restore on Escape).
+  usePopover(open, wrapRef, btnRef, setOpen);
 
   // Move focus into the menu on open, landing on the active option.
   useEffect(() => {

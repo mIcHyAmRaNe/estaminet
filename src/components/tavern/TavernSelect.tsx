@@ -1,4 +1,4 @@
-import { useState, useEffect } from "preact/hooks";
+import { useStatusToast } from "../../lib/hooks/useStatusToast";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import TavernCarousel from "./TavernCarousel";
 import RecentTaverns from "./RecentTaverns";
@@ -6,32 +6,11 @@ import { ArrowEnterLeft, ArrowLeft, Person } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
 import type { TavernSelectProps } from "../../lib/types";
 
-// Status toast timing: visible ~3.2s, then a 0.4s fade/slide exit.
-// Presentation only — the useTaverne status string itself is untouched,
-// and errors keep their persistent behavior.
-const STATUS_VISIBLE_MS = 3200;
-const STATUS_EXIT_MS = 400;
-
 // Step 2: where to? Session is already open (auth step done).
 // Recents chip row above the reused carousel; Enter opens the socket,
 // Back cuts the session and returns to accounts.
 export default function TavernSelect(props: TavernSelectProps) {
-  const [toastShow, setToastShow] = useState(false);
-  const [toastLeaving, setToastLeaving] = useState(false);
-
-  useEffect(() => {
-    if (!props.status || props.error) return;
-    setToastShow(true);
-    setToastLeaving(false);
-    const hide = setTimeout(() => setToastLeaving(true), STATUS_VISIBLE_MS);
-    const gone = setTimeout(() => setToastShow(false), STATUS_VISIBLE_MS + STATUS_EXIT_MS);
-    return () => {
-      clearTimeout(hide);
-      clearTimeout(gone);
-    };
-  }, [props.status, props.error]);
-
-  const showStatus = props.status !== "" && !props.error && toastShow;
+  const { showStatus, toastLeaving } = useStatusToast(props.status, props.error);
 
   return (
     <div class="auth-container">

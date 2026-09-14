@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api } from "../../api/tauri";
 import { Midas } from "../../lib/midas/renderer";
+import { displayLogin } from "../../lib/utils/login-utils";
 
 // Portraits rendered via <img src=dataURL>: the Midas canvas is rendered
 // OFFSCREEN (never attached to the DOM) then captured as PNG. An <img> is
@@ -182,7 +183,7 @@ export default function AvatarPortrait({ login, own }: { login: string; own?: bo
           class="portrait-fallback"
           style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px", fontWeight: 700, color: "#ddbfaa", zIndex: 1 }}
         >
-          {login.charAt(0).toUpperCase()}
+          {displayLogin(login).charAt(0)}
         </span>
       )}
     </div>

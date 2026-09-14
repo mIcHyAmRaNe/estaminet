@@ -10,16 +10,24 @@ pub enum AuthError {
     Network(String),
 }
 
+impl From<AuthError> for crate::error::AppError {
+    fn from(e: AuthError) -> Self {
+        match e {
+            AuthError::BadCredentials(msg) => Self::BadCredentials(msg),
+            AuthError::Network(msg) => Self::Network(msg),
+        }
+    }
+}
+
 pub async fn login(
     login: &str,
     password: &str,
 ) -> Result<(wreq::Client, std::sync::Arc<Jar>, String), AuthError> {
     let (client, jar) = create_client().map_err(AuthError::Network)?;
 
-    // Session initialization
+    // Session initialization (User-Agent comes from the client defaults).
     client
         .get(config::BASE_URL)
-        .header("User-Agent", config::USER_AGENT)
         .header(
             "Accept",
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -36,7 +44,6 @@ pub async fn login(
     // Login request
     let response = client
         .post(config::URL_LOGIN)
-        .header("User-Agent", config::USER_AGENT)
         .header(
             "Accept",
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -70,7 +77,6 @@ pub async fn login(
     // Fetch the chat token
     let response = client
         .get(config::URL_CHAT_TOKEN)
-        .header("User-Agent", config::USER_AGENT)
         .header("Accept", "application/json")
         .header("Referer", config::REFERER)
         .header("Connection", "keep-alive")

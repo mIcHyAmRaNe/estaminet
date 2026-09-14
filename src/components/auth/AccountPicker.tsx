@@ -1,4 +1,5 @@
 import { Dismiss } from "../../lib/utils/icons";
+import { displayLogin } from "../../lib/utils/login-utils";
 import { t } from "../../lib/i18n";
 import type { AccountPickerProps } from "../../lib/types";
 
@@ -13,7 +14,7 @@ export default function AccountPicker(props: AccountPickerProps) {
       <div class="account-list" role="radiogroup" aria-label={t("auth.accounts")}>
         {props.accounts.map((login) => {
           const checked = props.pickedAccount === login;
-          const initial = login.charAt(0).toUpperCase() || "?";
+          const initial = displayLogin(login).charAt(0) || "?";
           return (
             <div
               key={login}

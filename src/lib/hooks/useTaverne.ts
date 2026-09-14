@@ -14,20 +14,14 @@ import {
   MSG_HISTORY_LIMIT,
   WS_RECONNECT_DELAY_MS,
   WS_CLOSE_VOLUNTARY,
-  PLACES_ALLOWED,
+  DEFAULT_PLACES,
+  WHISPER_DEDUP_MS,
+  RECONNECT_MAX_ATTEMPTS,
+  RECONNECT_MAX_DELAY_MS,
+  ECUS_PULSE_MS,
+  PORTRAIT_WARN_TTL_MS,
 } from "../config";
-
-// --- Presence: case-insensitive keys, ucfirst display ---
-// Mirror of the official JS: self stored lowercase, displayed ucfirst.
-function loginKey(login: string): string {
-  return login.trim().toLowerCase();
-}
-
-function displayLogin(login: string): string {
-  const clean = login.trim();
-  if (!clean) return clean;
-  return clean.charAt(0).toUpperCase() + clean.slice(1);
-}
+import { loginKey, displayLogin } from "../utils/login-utils";
 
 function isValidLogin(login: string): boolean {
   const clean = login.trim();
@@ -40,6 +34,34 @@ function isValidLogin(login: string): boolean {
 // and the seat was treated as empty.
 const PLACE_LOGIN_RE = /^[\p{L}0-9_\-]+$/u;
 
+type Placement = { disp: string; key: string; idx: number };
+
+// Shared seat merge: move=false fills only empty slots without moving
+// already-placed logins (connectMe / taverneInit); move=true frees the old
+// slot and overrides the target (incremental connect = authoritative).
+function mergePlacements(prev: (string | null)[], placements: Placement[], opts: { move: boolean }): (string | null)[] {
+  const next = [...prev];
+  let maxIdx = next.length - 1;
+  for (const p of placements) if (p.idx > maxIdx) maxIdx = p.idx;
+  while (next.length <= maxIdx) next.push(null);
+  for (const p of placements) {
+    if (p.idx < 0 || p.idx >= next.length) continue;
+    const already = next.findIndex((x) => x !== null && x.toLowerCase() === p.key);
+    if (opts.move) {
+      if (already !== -1 && already !== p.idx) next[already] = null;
+      next[p.idx] = p.disp;
+    } else {
+      if (already !== -1) {
+        if (already === p.idx && next[already] !== p.disp) next[already] = p.disp;
+        continue;
+      }
+      if (next[p.idx] !== null) continue;
+      next[p.idx] = p.disp;
+    }
+  }
+  return next;
+}
+
 function extractPlaceIndex(o: Record<string, unknown>): number | null {  const candidates = [o.place, o.idPlace, o.position];
   for (const c of candidates) {
     if (typeof c === "number" && Number.isInteger(c) && c >= 0 && c < 20) return c;
@@ -51,13 +73,6 @@ function extractPlaceIndex(o: Record<string, unknown>): number | null {  const c
   return null;
 }
 
-const WHISPER_DEDUP_MS = 10000;
-const RECONNECT_MAX_ATTEMPTS = 5;
-const RECONNECT_MAX_DELAY_MS = 10000;
-const ECUS_PULSE_MS = 2500; // matches the official ecus_moins flash duration
-// Portrait fallback toast TTL (~6s, latest-wins): mirrors the floating
-// auth-status toasts, one notch longer so the warning registers.
-const PORTRAIT_WARN_TTL_MS = 6000;
 
 // Lane F1 — numeric payload field (server sometimes sends numbers as strings).
 function numField(v: unknown): number | null {
@@ -151,11 +166,11 @@ function mapTaverneError(err: unknown, parametre: unknown, selfDisp: string): st
   }
 }
 
-export function useTaverne(username: string, idLieu: number) {
+export function useTaverne(username: string, idLieu: number, tavernPlaces?: number) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [presentUsers, setPresentUsers] = useState<string[]>([]);
-  const [totalPlaces, setTotalPlaces] = useState(8);
-  const [places, setPlaces] = useState<(string | null)[]>(Array(8).fill(null));
+  const [totalPlaces, setTotalPlaces] = useState(tavernPlaces ?? DEFAULT_PLACES);
+  const [places, setPlaces] = useState<(string | null)[]>(() => Array(tavernPlaces ?? DEFAULT_PLACES).fill(null));
   const [selectedPlace, setSelectedPlace] = useState<number | null>(null);
   const [lastPlaceAttempt, setLastPlaceAttempt] = useState<number | null>(null);
   const lastPlaceRef = useRef<number | null>(null);
@@ -230,10 +245,10 @@ export function useTaverne(username: string, idLieu: number) {
     // Tavern change: explicit clear (42[...] frames carry no tavern ID)
     // + arming the race guard until the next ws-connected of the new tavern.
     awaitingFreshRef.current = true;
-    // Neutral fallback on tavern change: empty places while keeping the
-    // current size. The real size arrives via getTavernePlaces /
-    // NombrePlaces (filtered by PLACES_ALLOWED) — no hardcoded IDs here.
-    setPlaces(Array(totalPlaces).fill(null));
+    // Fixed size: DEFAULT_PLACES overridable via taverns.json `places`.
+    const n = tavernPlaces ?? DEFAULT_PLACES;
+    setPlaces(Array(n).fill(null));
+    setTotalPlaces(n);
     setSelectedPlace(null);
     setMessages([]);
     setPresentUsers([]);
@@ -250,20 +265,10 @@ export function useTaverne(username: string, idLieu: number) {
   }, [idLieu]);
 
   useEffect(() => {
-    api.getTavernePlaces(idLieu)
-      .then((n: number) => {
-        if ((PLACES_ALLOWED as readonly number[]).includes(n) && n !== totalPlaces) {
-          setTotalPlaces(n);
-          setPlaces((prev) => {
-            const cur = [...prev];
-            while (cur.length < n) cur.push(null);
-            while (cur.length > n) cur.pop();
-            return cur;
-          });
-        }
-      })
-      .catch(() => {});
-  }, [idLieu, isConnected]);
+    const n = tavernPlaces ?? DEFAULT_PLACES;
+    setTotalPlaces(n);
+    setPlaces(Array(n).fill(null));
+  }, [tavernPlaces]);
 
   const addPresent = (login: string) => {
     if (!isValidLogin(login)) return;
@@ -293,9 +298,7 @@ export function useTaverne(username: string, idLieu: number) {
 
   // Typing reception: lowercase logins currently composing (self excluded).
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  // Lane F2 — tavern ground type (`Lieu` from the NombrePlaces ws frame,
-  // e.g. "eglise"): drives the reserved-seat status icons in ChatRoom.
-  // Null until the first frame arrives (idLieu change resets it).
+  // Tavern ground type (e.g. "eglise"): drives the reserved-seat status icons in ChatRoom. Null = unset.
   const [lieu, setLieu] = useState<string | null>(null);
 
   // Lane F1 — social/economy state.
@@ -449,28 +452,6 @@ export function useTaverne(username: string, idLieu: number) {
         const data = JSON.parse(raw.substring(2)) as unknown[];
         const eventName = data[0] as string;
 
-        for (let i = 1; i < data.length; i++) {
-          const v = data[i] as Record<string, unknown>;
-          if (v && typeof v === "object" && "NombrePlaces" in v) {
-            const n = (v as { Lieu?: string; NombrePlaces: number }).Lieu === "eglise" ? 3 : Number((v as { NombrePlaces: number }).NombrePlaces);
-            // Lane F2 — capture the ground type for the reserved-seat icons.
-            const rawLieu = (v as { Lieu?: unknown }).Lieu;
-            if (typeof rawLieu === "string" && rawLieu.trim()) {
-              const nextLieu = rawLieu.trim();
-              setLieu((prev) => (prev === nextLieu ? prev : nextLieu));
-            }
-            if ((PLACES_ALLOWED as readonly number[]).includes(n) && n !== totalPlacesRef.current) {
-              setTotalPlaces(n);
-              setPlaces((prev) => {
-                const cur = [...prev];
-                while (cur.length < n) cur.push(null);
-                while (cur.length > n) cur.pop();
-                return cur;
-              });
-            }
-          }
-        }
-
         const lower = eventName.toLowerCase();
         if (lower.includes("place")) {
           if (lower.includes("vide")) {
@@ -527,14 +508,6 @@ export function useTaverne(username: string, idLieu: number) {
                 setLastPlaceAttempt(null);
                 lastPlaceRef.current = null;
                 stopAutoSeat();
-              }
-              if (id >= 8 && totalPlacesRef.current < 10) {
-                setTotalPlaces(10);
-                setPlaces((prev) => {
-                  const cur = [...prev];
-                  while (cur.length < 10) cur.push(null);
-                  return cur;
-                });
               }
             }
             return;
@@ -668,23 +641,7 @@ export function useTaverne(username: string, idLieu: number) {
             presentKeysRef.current = new Set(seen.keys());
             setTypingUsers([]);
             if (placements.length > 0) {
-              setPlaces((prev) => {
-                const next = [...prev];
-                let maxIdx = next.length - 1;
-                for (const p of placements) if (p.idx > maxIdx) maxIdx = p.idx;
-                while (next.length <= maxIdx) next.push(null);
-                for (const p of placements) {
-                  if (p.idx < 0 || p.idx >= next.length) continue;
-                  const already = next.findIndex((x) => x !== null && x.toLowerCase() === p.key);
-                  if (already !== -1) {
-                    if (already === p.idx && next[already] !== p.disp) next[already] = p.disp;
-                    continue;
-                  }
-                  if (next[p.idx] !== null) continue;
-                  next[p.idx] = p.disp;
-                }
-                return next;
-              });
+              setPlaces((prev) => mergePlacements(prev, placements, { move: false }));
             }
           } else if (sub === "connect" && data.length >= 3) {
             // Incremental: 42["taverneInfosPersonnage","connect",{login,portrait,place,...}]
@@ -731,19 +688,7 @@ export function useTaverne(username: string, idLieu: number) {
               }
             }
             if (placements.length > 0) {
-              setPlaces((prev) => {
-                const next = [...prev];
-                let maxIdx = next.length - 1;
-                for (const p of placements) if (p.idx > maxIdx) maxIdx = p.idx;
-                while (next.length <= maxIdx) next.push(null);
-                for (const p of placements) {
-                  if (p.idx < 0 || p.idx >= next.length) continue;
-                  const already = next.findIndex((x) => x !== null && x.toLowerCase() === p.key);
-                  if (already !== -1 && already !== p.idx) next[already] = null;
-                  next[p.idx] = p.disp;
-                }
-                return next;
-              });
+              setPlaces((prev) => mergePlacements(prev, placements, { move: true }));
             }
           }
           return;
@@ -816,23 +761,7 @@ export function useTaverne(username: string, idLieu: number) {
             }
           }
           if (placements.length > 0) {
-            setPlaces((prev) => {
-              const next = [...prev];
-              let maxIdx = next.length - 1;
-              for (const p of placements) if (p.idx > maxIdx) maxIdx = p.idx;
-              while (next.length <= maxIdx) next.push(null);
-              for (const p of placements) {
-                if (p.idx < 0 || p.idx >= next.length) continue;
-                const already = next.findIndex((x) => x !== null && x.toLowerCase() === p.key);
-                if (already !== -1) {
-                  if (already === p.idx && next[already] !== p.disp) next[already] = p.disp;
-                  continue;
-                }
-                if (next[p.idx] !== null) continue;
-                next[p.idx] = p.disp;
-              }
-              return next;
-            });
+            setPlaces((prev) => mergePlacements(prev, placements, { move: false }));
           }
           return;
         } else if (eventName === "taverneMessagePrive") {
@@ -1179,6 +1108,13 @@ export function useTaverne(username: string, idLieu: number) {
       autoSeat.current.maxTimer = setTimeout(() => tryAutoSeat(), AUTO_MAX_MS);
     }
 
+    function resetPresence() {
+      setPresentUsers([]);
+      presentKeysRef.current.clear();
+      setTypingUsers([]);
+      setPlaces(Array(totalPlacesRef.current).fill(null));
+    }
+
     listen<string>("ws-message", handleMessage).then((un) => {
       trackUnlisten(un);
     });
@@ -1195,19 +1131,12 @@ export function useTaverne(username: string, idLieu: number) {
       if (voluntary) {
         setIsConnected(false);
         isConnectedRef.current = false;
-        setPresentUsers([]);
-        presentKeysRef.current.clear();
-        setTypingUsers([]);
-        setPlaces(Array(totalPlacesRef.current).fill(null));
+        resetPresence();
         return;
       }
       const attempted = lastPlaceRef.current;
       const total = totalPlacesRef.current;
-      if (attempted !== null && attempted >= 8) {
-        if (total > 8) {
-          setTotalPlaces(8);
-          setPlaces(Array(8).fill(null));
-        }
+      if (attempted !== null && attempted >= total) {
         setError(t("place.invalid", { place: attempted }));
         setSelectedPlace(null);
         setLastPlaceAttempt(null);
@@ -1222,10 +1151,7 @@ export function useTaverne(username: string, idLieu: number) {
       // Voluntary: no message clear and no guard arming here.
       // Micro-drop + same-tavern auto reconnect = history preserved.
       // The clear + guard live on idLieu change only.
-      setPresentUsers([]);
-      presentKeysRef.current.clear();
-      setTypingUsers([]);
-      setPlaces(Array(totalPlacesRef.current).fill(null));
+      resetPresence();
       // Auto-reconnect: only on unexpected loss (we were connected), never
       // when no live session is required, with backoff and stop on success
       // (reset on ws-connected).
@@ -1297,97 +1223,58 @@ export function useTaverne(username: string, idLieu: number) {
 
   // Lane F1 — social/economy emits. Failures surface via the room error
   // banner (same TTL as other transient errors), never as a crash.
-  const offerDrink = async (login: string) => {
+  const withTransientError = async (fn: () => Promise<unknown>): Promise<void> => {
     try {
-      await api.taverneOffreVerre(login);
+      await fn();
     } catch (e) {
       setError(String(e));
       setTimeout(() => setError(""), ERROR_TTL_MS);
     }
   };
 
-  const orderMenu = async (id: number) => {
-    // Reuses the existing /manger emit (taverneCommandeRepas) — no new command.
-    try {
-      await api.wsSend(`/manger ${id}`);
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
-  };
+  const offerDrink = (login: string): Promise<void> =>
+    withTransientError(() => api.taverneOffreVerre(login));
 
-  const buyTournee = async () => {
-    try {
-      await api.taverneTourneeGenerale();
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
-  };
+  // Reuses the existing /manger emit (taverneCommandeRepas) — no new command.
+  const orderMenu = (id: number): Promise<void> =>
+    withTransientError(() => api.wsSend(`/manger ${id}`));
 
-  const orderDrink = async () => {
-    // Reuses the existing /boire emit (taverneCommandeVerre) — no new command.
-    try {
-      await api.wsSend("/boire");
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
-  };
+  const buyTournee = (): Promise<void> =>
+    withTransientError(() => api.taverneTourneeGenerale());
+
+  // Reuses the existing /boire emit (taverneCommandeVerre) — no new command.
+  const orderDrink = (): Promise<void> =>
+    withTransientError(() => api.wsSend("/boire"));
 
   // Lane F3 — proactive alcohol consent toggle (official checkbox
   // #chatMenuInputAccepteAlcool → chat.accepteAlcool). The server answers
   // with a taverneAccepteAlcool broadcast that re-syncs the state above.
-  const toggleAccepteAlcool = async () => {
+  const toggleAccepteAlcool = (): Promise<void> => {
     const next = !accepteAlcool;
-    try {
-      await api.taverneAccepteAlcool(next);
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
+    return withTransientError(() => api.taverneAccepteAlcool(next));
   };
 
   // Lane F3 — moderation (PlayerMenu; server enforces rights and answers
   // with tavernePersonnageKick/Ban/Unban confirmations or taverneErreur
   // PasAutoKick/PasAutoBan). Failures surface via the transient error.
-  const kickPlayer = async (login: string) => {
-    try {
-      await api.taverneKick(login);
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
-  };
+  const kickPlayer = (login: string): Promise<void> =>
+    withTransientError(() => api.taverneKick(login));
 
-  const banPlayer = async (login: string) => {
-    try {
-      await api.taverneBan(login);
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
-  };
+  const banPlayer = (login: string): Promise<void> =>
+    withTransientError(() => api.taverneBan(login));
 
-  const unbanPlayer = async (login: string) => {
-    try {
-      await api.taverneUnban(login);
-    } catch (e) {
-      setError(String(e));
-      setTimeout(() => setError(""), ERROR_TTL_MS);
-    }
-  };
+  const unbanPlayer = (login: string): Promise<void> =>
+    withTransientError(() => api.taverneUnban(login));
 
   return {
     messages, setMessages,
     presentUsers, places, totalPlaces, selectedPlace, setSelectedPlace,
-    lastPlaceAttempt, setLastPlaceAttempt, lastPlaceRef,
     error, setError, status, setStatus,
     isConnected, setIsConnected,
     typingUsers,
     // Lane F2 — tavern ground type for the reserved-seat status icons.
     lieu,
-    addPresent, setPresentUsers, setPlaces, setTotalPlaces,
+    setPresentUsers, setPlaces, setTotalPlaces,
     // Lane F1 — social/economy (later lanes build on these names).
     menus, ecus, ecusPulse, alcoolRate, alcoolByLogin, tournee, kicked, banned,
     offerDrink, orderMenu, orderDrink, buyTournee, clearTournee, clearSocialState,

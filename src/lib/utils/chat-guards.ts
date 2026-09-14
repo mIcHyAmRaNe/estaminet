@@ -7,5 +7,3 @@ export function isChopineText(content: string): boolean {
   return c.includes("chopine") || c.includes("chope") || c.includes("verre");
 }
 
-/** Alias kept for backwards compat with MessageList's isChopine */
-export const isChopine = isChopineText;

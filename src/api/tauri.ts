@@ -10,15 +10,8 @@ export const api = {
   login: (username: string, password: string, remember: boolean) =>
     invoke<string | null>("login", { username, password, remember }),
 
-  tryAutoLogin: () => invoke<string | null>("try_auto_login"),
-
-  getSavedLogin: () => invoke<string | null>("get_saved_login"),
-
   // ── ora-1 multi-account contract (backend in progress) ──
   listAccounts: () => invoke<string[]>("list_accounts"),
-
-  saveAccount: (username: string, password: string) =>
-    invoke<void>("save_account", { username, password }),
 
   removeAccount: (username: string) =>
     invoke<void>("remove_account", { username }),
@@ -44,8 +37,6 @@ export const api = {
 
   saveChatLog: (tavernId: number, content: string) =>
     invoke<string>("save_chat_log", { tavernId, content }),
-
-  getTavernePlaces: (idLieu: number) => invoke<number>("get_taverne_places", { idLieu }),
 
   // Portrait calque bytes from the oxv CDN via the Rust proxy: returns a
   // data: URL (webp→png fallback server-side). Same-origin load → untainted
@@ -79,11 +70,4 @@ export const api = {
 
   isConnected: () => invoke<boolean>("is_connected"),
 
-  getSessionLogin: () => invoke<string | null>("get_session_login"),
-
-  getLogDir: () => invoke<string>("get_log_dir"),
-
-  getFullLog: (tavernId: number) => invoke<string>("get_full_log", { tavernId }),
 } as const;
-
-export type Api = typeof api;

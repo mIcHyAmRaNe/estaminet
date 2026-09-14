@@ -1,5 +1,5 @@
 import { t } from "../../lib/i18n";
-import { RK_BASE } from "../../lib/config";
+import { profileUrl } from "./LinkifiedText";
 import choppeIcon from "../../assets/images/interieurTaverne/iconeMini_choppe.png";
 import whisperIcon from "../../assets/images/interieurTaverne/iconeMini_chuchoter.png";
 
@@ -24,7 +24,7 @@ interface Props {
 // players: offer a drink (taverneOffreVerre), whisper (prefills /w), character
 // sheet (official FichePersonnage.php profile). Revealed on card hover via CSS.
 export default function PlayerMenu({ login, onOfferDrink, onWhisper, hideDrink, targetAcceptsAlcool, onKick, onBan, onUnban }: Props) {
-  const profileUrl = `${RK_BASE}/FichePersonnage.php?login=${encodeURIComponent(login)}`;
+
   return (
     <div class="player-menu" role="menu">
       {!hideDrink && (
@@ -56,7 +56,7 @@ export default function PlayerMenu({ login, onOfferDrink, onWhisper, hideDrink, 
       <a
         class="player-menu-item"
         role="menuitem"
-        href={profileUrl}
+        href={profileUrl(login)}
         target="_blank"
         rel="noreferrer"
         onClick={(e: Event) => e.stopPropagation()}

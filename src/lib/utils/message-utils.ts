@@ -4,7 +4,6 @@ export type MessageUnit<T> =
 
 export interface GroupResult<T> {
   units: MessageUnit<T>[]
-  groupIdsByMsg: Map<string, string[]>
 }
 
 function sameMinute(a: { created_at?: string; timestamp?: string }, b: { created_at?: string; timestamp?: string }): boolean {
@@ -33,7 +32,6 @@ export function computeMessageUnits<T extends Groupable>(
   isSpecial: (msg: T) => boolean,
 ): GroupResult<T> {
   const units: MessageUnit<T>[] = []
-  const groupIdsByMsg = new Map<string, string[]>()
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
@@ -52,9 +50,7 @@ export function computeMessageUnits<T extends Groupable>(
       } else break
     }
     units.push({ kind: 'group', messages: groupMsgs, index: i })
-    const ids = groupMsgs.map((m) => m.id)
-    for (const m of groupMsgs) groupIdsByMsg.set(m.id, ids)
     i = j - 1
   }
-  return { units, groupIdsByMsg }
+  return { units }
 }

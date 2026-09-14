@@ -16,14 +16,6 @@ pub fn log_error(msg: &str) {
     eprintln!("[estaminet][error] {msg}");
 }
 
-#[allow(dead_code)]
-#[inline]
-pub fn log_debug(msg: &str) {
-    if cfg!(debug_assertions) {
-        println!("[estaminet][debug] {msg}");
-    }
-}
-
 #[cfg(windows)]
 fn hide_dir_windows(dir: &std::path::Path) {
     use std::os::windows::ffi::OsStrExt;
@@ -62,32 +54,32 @@ pub fn log_path_for(tavern_id: u64) -> Result<PathBuf, String> {
     Ok(dir.join(format!("taverne_{}_{}.log", tavern_id, date)))
 }
 
+/// Append one timestamped line to the per-taverne daily log file.
+/// Best-effort: failures are silently ignored. An empty `prefix` writes the
+/// line bare (`[ts] {payload}`), otherwise `[ts] {prefix} {payload}`.
+pub fn append_line(tavern_id: u64, prefix: &str, payload: &str) {
+    let Ok(path) = log_path_for(tavern_id) else {
+        return;
+    };
+    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let entry = if prefix.is_empty() {
+        format!("[{ts}] {payload}\n")
+    } else {
+        format!("[{ts}] {prefix} {payload}\n")
+    };
+    let _ = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .and_then(|mut f| {
+            use std::io::Write;
+            f.write_all(entry.as_bytes())
+        });
+}
+
 /// Append a raw socket line to the per-taverne daily log file.
 /// Used by the WebSocket task — failures are silently ignored (best-effort).
 pub fn append_ws_line(tavern_id: u64, line: &str) {
     // Spawn-independent helper: keep logic out of socket.rs
-    if let Some(home) = dirs::home_dir() {
-    let dir = home.join(".estaminet").join("logs");
-        #[cfg(windows)]
-        let is_new = !dir.exists();
-        let _ = std::fs::create_dir_all(&dir);
-        #[cfg(windows)]
-        {
-            if is_new {
-                hide_dir_windows(&dir);
-            }
-        }
-        let date = chrono::Local::now().format("%Y-%m-%d").to_string();
-        let path = dir.join(format!("taverne_{}_{}.log", tavern_id, date));
-        let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let entry = format!("[{ts}] {line}\n");
-        let _ = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&path)
-            .and_then(|mut f| {
-                use std::io::Write;
-                f.write_all(entry.as_bytes())
-            });
-    }
+    append_line(tavern_id, "", line);
 }

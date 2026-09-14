@@ -15,7 +15,6 @@ pub fn run() {
         .manage(network::session::AppState::default())
         .invoke_handler(tauri::generate_handler![
             taverne::get_taverns,
-            taverne::get_taverne_places,
             taverne::get_portrait_json,
             taverne::get_own_portrait_json,
             taverne::fetch_portrait_asset,

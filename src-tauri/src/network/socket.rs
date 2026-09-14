@@ -57,34 +57,17 @@ fn build_default_portrait(login: &str) -> String {
 
 pub(crate) fn build_change_salon(login: &str, id_lieu: u64, portrait_json: &str) -> String {
     let trimmed = portrait_json.trim();
-    let mut portrait_value: serde_json::Value = if !trimmed.is_empty()
-        && serde_json::from_str::<serde_json::Value>(trimmed).is_ok()
-    {
-        serde_json::from_str(trimmed).unwrap()
+    let valid =
+        !trimmed.is_empty() && serde_json::from_str::<serde_json::Value>(trimmed).is_ok();
+    // Canonical form shared with `commands::taverne` (session-login
+    // normalization + worn-only `equipement` filter); invalid/empty input
+    // falls back to the default outfit as before.
+    let portrait = if valid {
+        crate::commands::taverne::canonicalize_portrait_json(trimmed, login)
     } else {
-        serde_json::from_str(&build_default_portrait(login)).unwrap()
+        crate::commands::taverne::canonicalize_portrait_json(&build_default_portrait(login), login)
     };
-    // Normalize portrait login to session login (display case diverges from page)
-    if let Some(obj) = portrait_value.as_object_mut() {
-        if let Some(_log) = obj.get("login").and_then(|v| v.as_str()) {
-            obj.insert("login".to_string(), serde_json::Value::String(login.to_string()));
-        }
-    }
-    // Filter equipement to worn-only (miniature == "o") to match browser send
-    if let Some(obj) = portrait_value.as_object_mut() {
-        if let Some(arr) = obj.get_mut("equipement").and_then(|v| v.as_array_mut()) {
-            arr.retain(|item| {
-                item.get("miniature")
-                    .and_then(|v| v.as_str())
-                    .map_or(false, |m| m == "o")
-            });
-        }
-    }
-    let portrait = portrait_value.to_string();
-    let visage: String = serde_json::from_str::<serde_json::Value>(&portrait)
-        .ok()
-        .and_then(|v| v.get("codeVisage")?.as_str().map(str::to_owned))
-        .unwrap_or_else(|| "<none>".into());
+    let visage = crate::commands::taverne::code_visage_of(&portrait);
     logs::log_info(&format!(
         "changeSalon id_lieu={id_lieu} codeVisage={visage} ({} bytes)",
         portrait.len()
@@ -111,9 +94,7 @@ async fn close_dead_session(app: &tauri::AppHandle, reason: &str) {
     let state = app.state::<crate::network::session::AppState>();
     let mut session_guard = state.session.lock().await;
     if let Some(session) = session_guard.as_mut() {
-        let (dummy_tx, dummy_rx) = mpsc::channel::<String>(1);
-        drop(dummy_rx);
-        session.tx = dummy_tx;
+        session.replace_tx_with_closed();
     }
     drop(session_guard);
     let _ = app.emit("ws-closed", reason.to_string());
@@ -181,6 +162,10 @@ async fn handshake(
     read: &mut futures_util::stream::SplitStream<WsStream>,
     app: &tauri::AppHandle,
 ) -> Result<(), ()> {
+    // Handshake failures surface as `ws-closed` (via `close_dead_session`),
+    // NOT `ws-error`: the frontend listens to `ws-closed` / `ws-connected` /
+    // `ws-message` only, so a `ws-error` emit here would be unheard AND leave
+    // the session tx live, wedging `is_connected()` at `true` forever.
     // First engine.io open packet (e.g. "0{...}") — log and ignore.
     if let Some(Ok(msg)) = read.next().await {
         logs::log_info(&format!("Handshake received: {msg}"));
@@ -196,18 +181,18 @@ async fn handshake(
                     return Ok(());
                 }
                 if text == "41" {
-                    let _ = app.emit("ws-error", "Authentication error (41)");
+                    close_dead_session(app, "Authentication error (41)").await;
                     return Err(());
                 }
             }
             Some(Err(e)) => {
                 logs::log_error(&format!("WebSocket error: {e}"));
-                let _ = app.emit("ws-error", format!("WebSocket error: {e}"));
+                close_dead_session(app, &format!("WebSocket error: {e}")).await;
                 return Err(());
             }
             None => {
                 logs::log_error("Connection closed by the server");
-                let _ = app.emit("ws-error", "Connection closed by the server");
+                close_dead_session(app, "Connection closed by the server").await;
                 return Err(());
             }
         }
@@ -233,22 +218,13 @@ fn register_handlers(
         // Send the initial messages (changeSalon + refresh)
         for payload in [
             change_salon.clone(),
-            r#"42["taverneMajPerso"]"#.to_string(),
-            r#"42["taverneMajMenus"]"#.to_string(),
+            crate::network::socket_io("taverneMajPerso", &[]),
+            crate::network::socket_io("taverneMajMenus", &[]),
         ] {
             logs::log_info(&format!("Initial send: {payload}"));
             // Raw-send log to file for byte-exact diff verification
             if payload.starts_with("42[\"changeSalon\"") {
-                let tav_path = crate::utils::logs::log_path_for(tavern_id).ok();
-                if let Some(p) = tav_path {
-                    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                    let entry = format!("[{ts}] SEND {payload}\n");
-                    let _ = std::fs::OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open(p)
-                        .and_then(|mut f| std::io::Write::write_all(&mut f, entry.as_bytes()));
-                }
+                crate::utils::logs::append_line(tavern_id, "SEND", &payload);
             }
             if write.send(payload.into()).await.is_err() {
                 logs::log_error("Initial send error");
@@ -342,7 +318,10 @@ pub async fn ws_connect(
 
     logs::log_info("WebSocket connected!");
 
-    let change_salon = format!("42[\"changeSalon\",{}]", build_change_salon(login, id_lieu, &portrait_json));
+    let salon_obj: serde_json::Value =
+        serde_json::from_str(&build_change_salon(login, id_lieu, &portrait_json))
+            .unwrap_or(serde_json::json!({}));
+    let change_salon = crate::network::socket_io("changeSalon", &[salon_obj]);
     let (tx, rx) = mpsc::channel::<String>(config::WS_CHANNEL_CAP);
     let app_clone = app.clone();
 

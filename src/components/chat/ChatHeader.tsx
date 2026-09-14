@@ -1,4 +1,5 @@
 import type { TavernMenus, EcusPulse } from "../../lib/types";
+import { LIEU_EGLISE } from "../../lib/config";
 import MenuPopup from "./MenuPopup";
 import HeaderMenu from "./HeaderMenu";
 import { t } from "../../lib/i18n";
@@ -35,7 +36,7 @@ interface Props {
 export default function ChatHeader({ tavernName, isConnected, onDisconnect, onCopy, onRefreshPortraits, ecus, ecusPulse, menus, onOrderMenu, onOrderDrink, onBuyTournee, lieu, alcoolRate, accepteAlcool, onToggleAlcool }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   // Lane F3 — church mode: the official client hides ALL drink features.
-  const isChurch = (lieu ?? "").trim().toLowerCase() === "eglise";
+  const isChurch = (lieu ?? "").trim().toLowerCase() === LIEU_EGLISE;
   // Lane F3 — drunkenness gauge (official ~0..20 scale → percent).
   const alcoolPct =
     alcoolRate === null || alcoolRate === undefined

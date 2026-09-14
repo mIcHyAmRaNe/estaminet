@@ -30,6 +30,7 @@ struct TavernEntry {
     // Nullable in source JSON (e.g. "Inconnue" placeholders) → fallback below.
     tavern_name: Option<String>,
     description: Option<String>,
+    places: Option<u64>,
 }
 
 #[derive(Serialize)]
@@ -38,6 +39,7 @@ pub struct TavernInfo {
     pub name: String,
     pub ville: String,
     pub description: String,
+    pub places: Option<u64>,
 }
 
 #[tauri::command]
@@ -60,67 +62,13 @@ pub async fn get_taverns() -> Vec<TavernInfo> {
                     .unwrap_or_else(|| format!("Tavern {}", t.tavern_id)),
                 ville: city.name.clone(),
                 description: t.description.unwrap_or_default(),
+                places: t.places,
             })
         })
         .collect()
 }
 
 // ---------- helpers: robust parsing ----------
-
-fn extract_nombre_places(html: &str) -> Result<u64, AppError> {
-    // Try multiple robust strategies before failing.
-
-    // Strategy 1: look for the key "NombrePlaces" and parse the nearby number.
-    // We allow JSON `"NombrePlaces": 9`, `"NombrePlaces":"9"`, or HTML `NombrePlaces=9`.
-    let mut search_start = 0;
-    while let Some(idx) = html[search_start..].find("NombrePlaces") {
-        let abs_idx = search_start + idx;
-        // Take a window around the key to avoid scanning whole doc.
-        let window_end = (abs_idx + 400).min(html.len());
-        let snippet = &html[abs_idx..window_end];
-
-        // Find separator ':' or '=' after the key.
-        if let Some(sep_rel) = snippet["NombrePlaces".len()..].find(|c| c == ':' || c == '=') {
-            let after_sep = &snippet["NombrePlaces".len() + sep_rel + 1..];
-            // Skip non-digits (quotes, spaces)
-            let digits: String = after_sep
-                .chars()
-                .skip_while(|c| !c.is_ascii_digit())
-                .take_while(|c| c.is_ascii_digit())
-                .collect();
-            if let Ok(n) = digits.parse::<u64>() {
-                if config::VALID_NOMBRE_PLACES.contains(&n) || (1..=20).contains(&n) {
-                    return Ok(n);
-                }
-            }
-        }
-
-        // Fallback within snippet: grab first digit sequence after the key.
-        let after_key = &snippet["NombrePlaces".len()..];
-        let digits: String = after_key
-            .chars()
-            .skip_while(|c| !c.is_ascii_digit())
-            .take_while(|c| c.is_ascii_digit())
-            .collect();
-        if let Ok(n) = digits.parse::<u64>() {
-            if config::VALID_NOMBRE_PLACES.contains(&n) || (1..=20).contains(&n) {
-                return Ok(n);
-            }
-        }
-
-        search_start = abs_idx + "NombrePlaces".len();
-        if search_start >= html.len() {
-            break;
-        }
-    }
-
-    // Strategy 2: broad regex-like fallback — search for `"NombrePlaces"\s*:\s*"?\d+"?`
-    // We do a manual scan to avoid adding regex dependency.
-    // If still not found, return granular error.
-    Err(AppError::InvalidFormat(
-        "NombrePlaces not found in the response".into(),
-    ))
-}
 
 fn extract_balanced_json(s: &str, start_brace: usize) -> Option<&str> {
     let bytes = s.as_bytes();
@@ -222,7 +170,7 @@ fn found_login_of(json_str: &str) -> Option<String> {
     None
 }
 
-fn canonicalize_portrait_json(json_str: &str, expected_login: &str) -> String {
+pub(crate) fn canonicalize_portrait_json(json_str: &str, expected_login: &str) -> String {
     let trimmed = json_str.trim();
     let mut value: serde_json::Value = match serde_json::from_str::<serde_json::Value>(trimmed) {
         Ok(v) => v,
@@ -349,62 +297,6 @@ fn extract_portrait_json(html: &str, expected_login: &str) -> Result<String, App
     ))
 }
 
-// ---------- inner impls returning AppError ----------
-
-async fn inner_get_taverne_places(
-    client: &wreq::Client,
-    jar: &std::sync::Arc<wreq::cookie::Jar>,
-    id_lieu: u64,
-) -> Result<u64, AppError> {
-    let cookie_header = extract_cookies(jar);
-    if cookie_header.is_empty() {
-        return Err(AppError::Network("No cookie".into()));
-    }
-
-    let candidates = [
-        format!("{}?l={id_lieu}", config::URL_ECRAN_PRINCIPAL),
-        format!("{}?l={id_lieu}", config::URL_ECRAN_PRINCIPAL_AJAX),
-        format!("{}?l={id_lieu}", config::URL_VILLAGE),
-    ];
-
-    let mut last_err: Option<AppError> = None;
-
-    for url in candidates {
-        let resp = client
-            .get(&url)
-            .header("Cookie", cookie_header.clone())
-            .header("User-Agent", config::USER_AGENT)
-            .header("Referer", config::REFERER)
-            .send()
-            .await
-            .map_err(|e| AppError::Network(format!("Tavern request failed: {e}")))?;
-
-        let status = resp.status();
-        if !status.is_success() {
-            last_err = Some(AppError::Network(format!("HTTP {status} for {url}")));
-            continue;
-        }
-
-        let text = resp
-            .text()
-            .await
-            .map_err(|e| AppError::Network(format!("Error reading response: {e}")))?;
-
-        match extract_nombre_places(&text) {
-            Ok(n) => {
-                logs::log_info(&format!("taverne {id_lieu} NombrePlaces={n}"));
-                return Ok(n);
-            }
-            Err(e) => {
-                last_err = Some(e);
-                continue;
-            }
-        }
-    }
-
-    Err(last_err.unwrap_or_else(|| AppError::InvalidFormat("NombrePlaces not found".into())))
-}
-
 /// codeVisage field of a portrait JSON (diagnostics: fresh/cached/default).
 pub(crate) fn code_visage_of(json_str: &str) -> String {
     serde_json::from_str::<serde_json::Value>(json_str)
@@ -432,7 +324,6 @@ async fn fetch_portrait_page(
     let resp = client
         .get(&url)
         .header("Cookie", cookie_header.clone())
-        .header("User-Agent", config::USER_AGENT)
         .header("Referer", config::REFERER)
         .send()
         .await
@@ -488,18 +379,6 @@ pub(crate) async fn fetch_own_portrait_json(
 // ---------- Tauri commands (map AppError -> String consistently) ----------
 
 #[tauri::command]
-pub async fn get_taverne_places(state: State<'_, AppState>, id_lieu: u64) -> Result<u64, String> {
-    let (client, jar) = {
-        let s = state.session.lock().await;
-        let s = s.as_ref().ok_or_else(|| AppError::NotConnected.to_string())?;
-        (s.client.clone(), s.jar.clone())
-    };
-    inner_get_taverne_places(&client, &jar, id_lieu)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
 pub async fn get_portrait_json(state: State<'_, AppState>, login: String) -> Result<String, String> {
     let (client, jar) = {
         let s = state.session.lock().await;
@@ -544,9 +423,9 @@ fn sniff_image_mime(bytes: &[u8]) -> Option<&'static str> {
 
 async fn get_asset_bytes(client: &wreq::Client, url: &str) -> Result<Vec<u8>, AppError> {
     // No cookies: the CDN is public and the session must not leak to it.
+    // (User-Agent comes from the client defaults.)
     let resp = client
         .get(url)
-        .header("User-Agent", config::USER_AGENT)
         .send()
         .await
         .map_err(|e| AppError::Network(format!("CDN request failed: {e}")))?;
@@ -605,3 +484,5 @@ pub async fn fetch_portrait_asset(
         .await
         .map_err(|e| e.to_string())
 }
+
+

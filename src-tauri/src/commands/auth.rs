@@ -4,7 +4,6 @@ use crate::{
     config,
     error::AppError,
     network::{
-        auth::AuthError,
         credentials::{self, SavedCreds},
         session::AppState,
     },
@@ -16,6 +15,13 @@ use crate::{
 pub const KEYRING_UNAVAILABLE_WARNING: &str =
     "Logged in without remembering: keyring unavailable on this system.";
 
+/// Keyring-missing degradation: log the backend detail (never shown raw in
+/// the UI) and fall back to the silent value (empty list / `None`).
+fn keyring_soft<T>(ctx: &str, detail: &str, fallback: T) -> T {
+    logs::log_warn(&format!("keyring unavailable ({ctx}): {detail}"));
+    fallback
+}
+
 #[tauri::command]
 pub async fn login(
     state: State<'_, AppState>,
@@ -23,7 +29,7 @@ pub async fn login(
     password: String,
     remember: bool,
 ) -> Result<Option<String>, String> {
-    inner_login(&state, &username, &password, remember)
+    inner_login(&state, &username, &password)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -56,15 +62,9 @@ async fn inner_login(
     state: &State<'_, AppState>,
     username: &str,
     password: &str,
-    remember: bool,
 ) -> Result<String, AppError> {
-    let (client, jar, token) =
-        crate::network::auth::login(username, password)
-            .await
-            .map_err(|e| match e {
-                AuthError::BadCredentials(msg) => AppError::BadCredentials(msg),
-                AuthError::Network(msg) => AppError::Network(msg),
-            })?;
+    // `AuthError` converts into `AppError` via its `From` impl.
+    let (client, jar, token) = crate::network::auth::login(username, password).await?;
 
     let login_owned = username.to_owned();
     let mut session = state.session.lock().await;
@@ -74,7 +74,6 @@ async fn inner_login(
         jar,
         client,
         tx: tokio::sync::mpsc::channel(config::WS_CHANNEL_CAP).0,
-        remember,
     });
     Ok(login_owned)
 }
@@ -86,8 +85,7 @@ pub async fn list_accounts() -> Result<Vec<String>, String> {
         Ok(all) => Ok(all.into_iter().map(|c| c.username).collect()),
         // Secure storage missing: silent, no boot error (detail stays in logs).
         Err(AppError::KeyringUnavailable(detail)) => {
-            logs::log_warn(&format!("keyring unavailable (list accounts): {detail}"));
-            Ok(vec![])
+            Ok(keyring_soft("list accounts", &detail, vec![]))
         }
         Err(e) => Err(e.to_string()),
     }
@@ -128,8 +126,7 @@ pub async fn try_auto_login_for(
         Ok(s) => s,
         // Secure storage missing: silent, no boot error (detail stays in logs).
         Err(AppError::KeyringUnavailable(detail)) => {
-            logs::log_warn(&format!("keyring unavailable (auto-login): {detail}"));
-            return Ok(None);
+            return Ok(keyring_soft("auto-login", &detail, None));
         }
         Err(e) => return Err(e.to_string()),
     };
@@ -138,7 +135,7 @@ pub async fn try_auto_login_for(
         Some(c) => c,
     };
     let password = creds.password.clone();
-    match inner_login(&state, &username, &password, true).await {
+    match inner_login(&state, &username, &password).await {
         Ok(login) => Ok(Some(login)),
         Err(e) => match &e {
             AppError::BadCredentials(_) => {
@@ -164,8 +161,7 @@ pub async fn try_auto_login(state: State<'_, AppState>) -> Result<Option<String>
         Ok(all) => all.into_iter().next(),
         // Secure storage missing: silent, no boot error (detail stays in logs).
         Err(AppError::KeyringUnavailable(detail)) => {
-            logs::log_warn(&format!("keyring unavailable (auto-login): {detail}"));
-            return Ok(None);
+            return Ok(keyring_soft("auto-login", &detail, None));
         }
         Err(e) => return Err(e.to_string()),
     };
@@ -182,8 +178,7 @@ pub async fn get_saved_login() -> Result<Option<String>, String> {
         Ok(all) => Ok(all.into_iter().next().map(|c| c.username)),
         // Secure storage missing: silent, no boot error (detail stays in logs).
         Err(AppError::KeyringUnavailable(detail)) => {
-            logs::log_warn(&format!("keyring unavailable (saved login): {detail}"));
-            Ok(None)
+            Ok(keyring_soft("saved login", &detail, None))
         }
         Err(e) => Err(e.to_string()),
     }
@@ -229,17 +224,9 @@ pub async fn ws_disconnect(
         let Some(s) = session_guard.as_mut() else {
             return Ok(());
         };
-        // Replace tx with a closed placeholder: the old rx sees the
-        // buffered "41" then `None` and the socket task terminates.
-        let (dummy_tx, dummy_rx) = tokio::sync::mpsc::channel::<String>(1);
-        drop(dummy_rx);
-        let old_tx = std::mem::replace(&mut s.tx, dummy_tx);
-        if !old_tx.is_closed() {
-            let _ = old_tx.send("41".to_owned()).await;
-        }
-        // `old_tx` dropped here: closes the old channel.
-        drop(old_tx);
+        // Closed placeholder via `Session::close_tx` (buffered "41" first).
         // Session kept — token/jar/client retained for a later `ws_connect`.
+        s.close_tx().await;
     }
     let _ = app.emit("ws-closed", config::WS_CLOSE_VOLUNTARY);
     logs::log_info("ws_disconnect: ws closed voluntarily (41 + ws-closed), session kept");

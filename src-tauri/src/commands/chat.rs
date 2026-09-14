@@ -4,14 +4,31 @@ use tauri::{Emitter, State};
 use crate::{
     config,
     error::AppError,
-    network::session::AppState,
+    network::{session::AppState, socket_io},
     utils::logs,
 };
 
-fn socket_io(event: &str, args: &[Value]) -> String {
-    let mut payload = vec![json!(event)];
-    payload.extend_from_slice(args);
-    format!("42{}", json!(payload).to_string())
+/// Send a pre-built socket.io payload through the live session channel.
+async fn send_payload(state: &State<'_, AppState>, payload: String) -> Result<(), String> {
+    let session = state.session.lock().await;
+    let s = session
+        .as_ref()
+        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    s.tx.send(payload)
+        .await
+        .map_err(|_| AppError::ConnectionLost.to_string())?;
+    Ok(())
+}
+
+/// Build a `42["event", ...]` payload via [`socket_io`] and send it
+/// through the live session channel. Collapses the repeated
+/// lock-session → NotConnected → tx.send → ConnectionLost blocks.
+async fn send_event(
+    state: &State<'_, AppState>,
+    event: &str,
+    args: &[Value],
+) -> Result<(), String> {
+    send_payload(state, socket_io(event, args)).await
 }
 
 #[tauri::command]
@@ -56,18 +73,11 @@ async fn ws_connect_inner(
         let token = s.token.clone();
         let jar = s.jar.clone();
         let client = s.client.clone();
-        // Replace tx with a closed placeholder: the old rx will see the
-        // buffered "41" then `None` and the task will terminate. The closed
-        // placeholder also flips `is_connected` back to false during the window.
-        let (dummy_tx, dummy_rx) = tokio::sync::mpsc::channel::<String>(1);
-        drop(dummy_rx);
-        let old_tx = std::mem::replace(&mut s.tx, dummy_tx);
-        let had_live = !old_tx.is_closed();
-        if had_live {
-            let _ = old_tx.send("41".to_owned()).await;
-        }
-        // `old_tx` dropped here: closes the old channel.
-        drop(old_tx);
+        // Replace tx with a closed placeholder via `Session::close_tx`
+        // (buffered "41" first): the old rx sees "41" then `None` and the
+        // task terminates. The closed placeholder also flips `is_connected`
+        // back to false during the window.
+        let had_live = s.close_tx().await;
         if had_live {
             // Let the server digest the close before the new dial.
             drop(session_guard);
@@ -161,40 +171,17 @@ pub async fn ws_send(state: State<'_, AppState>, message: String) -> Result<(), 
         socket_io("taverneMessage", &[json!(message)])
     };
 
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_payload(&state, payload).await
 }
 
 #[tauri::command]
 pub async fn ws_typing_start(state: State<'_, AppState>) -> Result<(), String> {
-    let payload = socket_io("taverneDebuteMessage", &[]);
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneDebuteMessage", &[]).await
 }
 
 #[tauri::command]
 pub async fn ws_typing_stop(state: State<'_, AppState>) -> Result<(), String> {
-    let payload = socket_io("taverneAnnuleMessage", &[]);
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneAnnuleMessage", &[]).await
 }
 
 /// Shared teardown: send socket.io close ("41") then drop the session
@@ -221,46 +208,30 @@ pub async fn teardown_session(state: &State<'_, AppState>, app: &tauri::AppHandl
 
 #[tauri::command]
 pub async fn change_place(state: State<'_, AppState>, id_place: u64) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
+    // Preserve original error precedence: NotConnected before InvalidPlace.
+    {
+        let session = state.session.lock().await;
+        session
+            .as_ref()
+            .ok_or_else(|| AppError::NotConnected.to_string())?;
+    }
     if id_place > config::PLACE_MAX {
         return Err(AppError::InvalidPlace.to_string());
     }
     logs::log_info(&format!("change_place id={id_place}"));
     let payload = socket_io("taverneChangePlace", &[json!(id_place)]);
     logs::log_info(&format!("sending {payload}"));
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_payload(&state, payload).await
 }
 
 #[tauri::command]
 pub async fn taverne_offre_verre(state: State<'_, AppState>, login: String) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    let payload = socket_io("taverneOffreVerre", &[json!(login)]);
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneOffreVerre", &[json!(login)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_tournee_generale(state: State<'_, AppState>) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    let payload = socket_io("taverneTourneeGenerale", &[]);
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneTourneeGenerale", &[]).await
 }
 
 #[tauri::command]
@@ -268,52 +239,20 @@ pub async fn taverne_accepte_alcool(
     state: State<'_, AppState>,
     accepter: bool,
 ) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    let payload = socket_io("taverneAccepteAlcool", &[json!(accepter)]);
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneAccepteAlcool", &[json!(accepter)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_kick(state: State<'_, AppState>, login: String) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    let payload = socket_io("taverneKick", &[json!(login)]);
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneKick", &[json!(login)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_ban(state: State<'_, AppState>, login: String) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    let payload = socket_io("taverneBan", &[json!(login)]);
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneBan", &[json!(login)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_unban(state: State<'_, AppState>, login: String) -> Result<(), String> {
-    let session = state.session.lock().await;
-    let s = session
-        .as_ref()
-        .ok_or_else(|| AppError::NotConnected.to_string())?;
-    let payload = socket_io("taverneUnban", &[json!(login)]);
-    s.tx.send(payload)
-        .await
-        .map_err(|_| AppError::ConnectionLost.to_string())?;
-    Ok(())
+    send_event(&state, "taverneUnban", &[json!(login)]).await
 }

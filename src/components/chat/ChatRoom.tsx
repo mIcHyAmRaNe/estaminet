@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from "preact/hooks";
 import { createPortal } from "preact/compat";
-import type { ChatRoomProps } from "../../lib/types";
+import type { ChatRoomProps, ChatMessage } from "../../lib/types";
 import { t } from "../../lib/i18n";
 import { api } from "../../api/tauri";
-import { MSG_MAX_LEN, TYPING_STOP_DELAY_MS } from "../../lib/config";
+import { MSG_MAX_LEN, TYPING_STOP_DELAY_MS, SCROLL_THRESHOLD, DEFAULT_PLACES, LIEU_EGLISE } from "../../lib/config";
+import { displayLogin } from "../../lib/utils/login-utils";
 import { useAutoScroll } from "../../lib/hooks/useAutoScroll";
 import { isChopineText } from "../../lib/utils/chat-guards";
 import ChatHeader from "./ChatHeader";
@@ -32,7 +33,7 @@ type SeatReserve = "tavernier" | "noble" | "marie" | "cure" | "normal";
 
 function reserveOf(lieu: string | null | undefined, place: number): SeatReserve {
   if (!lieu) return "normal";
-  if (lieu.toLowerCase() === "eglise") {
+  if (lieu.toLowerCase() === LIEU_EGLISE) {
     if (place === 0 || place === 2) return "marie";
     if (place === 1) return "cure";
     return "normal";
@@ -49,9 +50,77 @@ const RESERVE_BADGE: Record<Exclude<SeatReserve, "normal">, { icon: string; labe
   cure: { icon: pretreIcon, labelKey: "seat.reserveCure" },
 };
 
+interface CharacterCardProps {
+  key?: string | number;
+  name: string;
+  isOwn: boolean;
+  isSelected?: boolean;
+  place?: number;
+  badge?: { icon: string; labelKey: string } | null;
+  last?: ChatMessage;
+  isTyping: boolean;
+  standing?: boolean;
+  showPlayerMenu: boolean;
+  onOfferDrink?: (login: string) => void;
+  onWhisper: (login: string) => void;
+  hideDrink: boolean;
+  targetAccepts: boolean | null;
+  onKick?: (login: string) => void;
+  onBan?: (login: string) => void;
+  onUnban?: (login: string) => void;
+}
+
+// Occupied seat + standing player card (shared portrait / last-message /
+// context menu). The empty-seat card stays inline (different markup).
+function CharacterCard(props: CharacterCardProps) {
+  const { name, isOwn } = props;
+  const last = props.last;
+  const isEmote = last?.type === "emote";
+  const chopine = last ? isChopineText(last.content) : false;
+  const lastMsg = props.isTyping ? (
+    <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
+  ) : last ? last.content.slice(0, 56) : "—";
+  const menu = props.showPlayerMenu && !isOwn && props.onOfferDrink ? (
+    <PlayerMenu login={name} onOfferDrink={props.onOfferDrink} onWhisper={props.onWhisper} hideDrink={props.hideDrink} targetAcceptsAlcool={props.targetAccepts} onKick={props.onKick} onBan={props.onBan} onUnban={props.onUnban} />
+  ) : null;
+  if (props.standing) {
+    return (
+      <div
+        class={`character-card standing${isOwn ? " own-player" : ""}`}
+        title={isOwn ? t("seat.ownStanding") : name}
+        style={{ position: "relative", left: "auto", top: "auto", transform: "none", width: 84, opacity: 1, animation: "none" }}
+      >
+        <div class="character-portrait" style={{ width: 64, height: 64 }}>
+          <AvatarPortrait login={name} own={isOwn} />
+        </div>
+        <span class="character-name" title={name} style={{ maxWidth: 80 }}>{name}</span>
+        <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>{lastMsg}</span>
+        {menu}
+      </div>
+    );
+  }
+  return (
+    <div
+      class={`character-card${isOwn ? " own-player" : ""}${props.isSelected ? " selected" : ""}`}
+      data-place={String(props.place ?? 0)}
+      title={isOwn ? t("seat.own") : name}
+    >
+      {props.badge && (
+        <img class="place-status-icon" src={props.badge.icon} alt="" title={t(props.badge.labelKey)} />
+      )}
+      <div class="character-portrait">
+        <AvatarPortrait login={name} own={isOwn} />
+      </div>
+      <span class="character-name" title={name}>{name}</span>
+      <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>{lastMsg}</span>
+      {menu}
+    </div>
+  );
+}
+
 export default function ChatRoom(props: ChatRoomProps) {
   const listRef = useRef<HTMLDivElement>(null);
-  const { showScrollBtn, pendingCount, scrollToBottom, handleScroll } = useAutoScroll(props.messages, listRef, 100);
+  const { showScrollBtn, pendingCount, scrollToBottom, handleScroll } = useAutoScroll(props.messages, listRef, SCROLL_THRESHOLD);
 
   const msgCount = props.messages.length;
   const typingUsers = props.typingUsers ?? [];
@@ -166,7 +235,7 @@ export default function ChatRoom(props: ChatRoomProps) {
   // Lane F3 — church mode (lieu === 'eglise'): the official client hides
   // ALL drink features (MenuPopup drink row, PlayerMenu offer entry,
   // header consent toggle). Menus + tournée keep working.
-  const isChurch = (props.lieu ?? "").trim().toLowerCase() === "eglise";
+  const isChurch = (props.lieu ?? "").trim().toLowerCase() === LIEU_EGLISE;
 
   // Lane F3 — fatal overlay priority: kick > ban > refresh request.
   const fatalKind: FatalKind | null = props.kicked
@@ -261,7 +330,7 @@ export default function ChatRoom(props: ChatRoomProps) {
     }
   };
 
-  const TOTAL_SEATS = props.totalPlaces ?? 10;
+  const TOTAL_SEATS = props.totalPlaces ?? DEFAULT_PLACES;
   const fallbackAuthors = Array.from(new Set(props.messages.filter((m) => m.login).map((m) => m.login as string)));
   const baseList = props.presentUsers.length > 0 ? props.presentUsers : fallbackAuthors;
   // Case-insensitive comparisons: the hook stores ucfirst display (lower
@@ -291,7 +360,7 @@ export default function ChatRoom(props: ChatRoomProps) {
   const standingBase = [...sorted];
   const curRaw = (props.currentUser ?? "").trim();
   if (curRaw && !placedKeys.has(curRaw.toLowerCase()) && !standingBase.some((u) => u.toLowerCase() === curRaw.toLowerCase())) {
-    standingBase.unshift(curRaw.charAt(0).toUpperCase() + curRaw.slice(1));
+    standingBase.unshift(displayLogin(curRaw));
   }
   const standing = hasPlaced ? standingBase.filter((u) => !placedKeys.has(u.toLowerCase())) : [];
   // Lane F2 — zoneQuiEcrit (official .taverne_zoneQuiEcrit): text near the
@@ -300,7 +369,7 @@ export default function ChatRoom(props: ChatRoomProps) {
   const typingDisplay = (() => {
     const out: string[] = [];
     for (const k of typingUsers) {
-      const disp = baseList.find((u) => u.toLowerCase() === k) ?? (k.charAt(0).toUpperCase() + k.slice(1));
+      const disp = baseList.find((u) => u.toLowerCase() === k) ?? displayLogin(k);
       if (!out.some((d) => d.toLowerCase() === disp.toLowerCase())) out.push(disp);
     }
     return out;
@@ -359,31 +428,26 @@ export default function ChatRoom(props: ChatRoomProps) {
               if (name) {
                 const nameLower = name.toLowerCase();
                 const last = [...props.messages].reverse().find((m) => (m.login ?? "").toLowerCase() === nameLower);
-                const isEmote = last?.type === "emote";
-                const chopine = last ? isChopineText(last.content) : false;
                 const isTyping = typingUsers.includes(nameLower);
                 return (
-                  <div
+                  <CharacterCard
                     key={`player-${name.toLowerCase()}-${avatarRefresh}`}
-                    class={`character-card${isOwn ? " own-player" : ""}${isSelected ? " selected" : ""}`}
-                    data-place={String(place)}
-                    title={isOwn ? t("seat.own") : name}
-                  >
-                    {badge && (
-                      <img class="place-status-icon" src={badge.icon} alt="" title={t(badge.labelKey)} />
-                    )}
-                    <div class="character-portrait">
-                      <AvatarPortrait login={name} own={isOwn} />
-                    </div>
-                    <span class="character-name" title={name}>{name}</span>                    <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
-                      {isTyping ? (
-                        <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
-                      ) : last ? last.content.slice(0, 56) : "—"}
-                    </span>
-                    {showPlayerMenu && !isOwn && props.onOfferDrink && (
-                      <PlayerMenu login={name} onOfferDrink={props.onOfferDrink} onWhisper={handleWhisperTo} hideDrink={isChurch} targetAcceptsAlcool={props.alcoolByLogin?.[name.toLowerCase()] ?? null} onKick={props.onKickPlayer} onBan={props.onBanPlayer} onUnban={props.onUnbanPlayer} />
-                    )}
-                  </div>
+                    name={name}
+                    place={place}
+                    isOwn={isOwn}
+                    isSelected={isSelected}
+                    badge={badge}
+                    last={last}
+                    isTyping={isTyping}
+                    showPlayerMenu={showPlayerMenu}
+                    onOfferDrink={props.onOfferDrink}
+                    onWhisper={handleWhisperTo}
+                    hideDrink={isChurch}
+                    targetAccepts={props.alcoolByLogin?.[name.toLowerCase()] ?? null}
+                    onKick={props.onKickPlayer}
+                    onBan={props.onBanPlayer}
+                    onUnban={props.onUnbanPlayer}
+                  />
                 );
               }
               return (
@@ -416,30 +480,25 @@ export default function ChatRoom(props: ChatRoomProps) {
                 {standing.map((name) => {
                   const nameLower = name.toLowerCase();
                   const last = [...props.messages].reverse().find((m) => (m.login ?? "").toLowerCase() === nameLower);
-                  const isEmote = last?.type === "emote";
-                  const chopine = last ? isChopineText(last.content) : false;
                   const isOwn = !!currentLower && nameLower === currentLower;
                   const isTyping = typingUsers.includes(nameLower);
                   return (
-                    <div
+                    <CharacterCard
                       key={`standing-${nameLower}-${avatarRefresh}`}
-                      class={`character-card standing${isOwn ? " own-player" : ""}`}
-                      title={isOwn ? t("seat.ownStanding") : name}
-                      style={{ position: "relative", left: "auto", top: "auto", transform: "none", width: 84, opacity: 1, animation: "none" }}
-                    >
-                      <div class="character-portrait" style={{ width: 64, height: 64 }}>
-                        <AvatarPortrait login={name} own={isOwn} />
-                      </div>
-                      <span class="character-name" title={name} style={{ maxWidth: 80 }}>{name}</span>
-                      <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
-                        {isTyping ? (
-                          <div class="lds-ellipsis" aria-label={t("chat.typingLabel", { user: name })}><div></div><div></div><div></div><div></div></div>
-                        ) : last ? last.content.slice(0, 56) : "—"}
-                      </span>
-                      {showPlayerMenu && !isOwn && props.onOfferDrink && (
-                        <PlayerMenu login={name} onOfferDrink={props.onOfferDrink} onWhisper={handleWhisperTo} hideDrink={isChurch} targetAcceptsAlcool={props.alcoolByLogin?.[name.toLowerCase()] ?? null} onKick={props.onKickPlayer} onBan={props.onBanPlayer} onUnban={props.onUnbanPlayer} />
-                      )}
-                    </div>
+                      name={name}
+                      isOwn={isOwn}
+                      last={last}
+                      isTyping={isTyping}
+                      standing
+                      showPlayerMenu={showPlayerMenu}
+                      onOfferDrink={props.onOfferDrink}
+                      onWhisper={handleWhisperTo}
+                      hideDrink={isChurch}
+                      targetAccepts={props.alcoolByLogin?.[name.toLowerCase()] ?? null}
+                      onKick={props.onKickPlayer}
+                      onBan={props.onBanPlayer}
+                      onUnban={props.onUnbanPlayer}
+                    />
                   );
                 })}
               </div>

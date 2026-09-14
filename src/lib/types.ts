@@ -3,7 +3,7 @@ export interface Tavern {
   name: string;
   ville: string;
   description: string;
-  image?: string;
+  places?: number;
 }
 
 export type MessageType = "normal" | "emote" | "whisper" | "system" | "error" | "warning" | "drink" | "meal" | "tournee";
@@ -140,8 +140,7 @@ export interface ChatRoomProps {
   tavernName: string;
   currentUser?: string;
   typingUsers?: string[];
-  // Lane F2 — tavern ground type (ws NombrePlaces frame `Lieu`, e.g.
-  // "eglise"): drives the reserved-seat status icons. Null = unknown yet.
+  // Tavern ground type (e.g. "eglise"): drives the reserved-seat status icons. Null = unset.
   lieu?: string | null;
   // Lane F1 — social/economy (all optional so older callers keep compiling).
   menus?: TavernMenus;

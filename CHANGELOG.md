@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.5.8] - 2026-09-14
+
+### Removed
+- Dead files: `src/styles/main.scss`, `src/components/layout/AppShell.tsx`,
+  `src/components/ui/ThemeSwitcher.tsx` (+ `Moon` icon), `src/lib/utils/date-utils.ts`.
+- Dead wrappers in `src/api/tauri.ts`: `tryAutoLogin`, `getSavedLogin`,
+  `saveAccount`, `getSessionLogin`, `getLogDir`, `getFullLog` + `Api` type.
+- Dead code: `AppResult`, `log_debug`, `CHAT_WSS_HOST`,
+  `PLACE_RESERVED_DEFAULT`, credential `save/load/delete/delete_all` shims,
+  `Session.remember`, `sound.ts` toggles, `groupIdsByMsg`, `isChopine` alias,
+  `Tavern.image`, unused `config.ts` consts, dead CSS in `_auth.scss`/`room.css`,
+  fluent `jsx-fix.d.ts` shims.
+- Dead CSS blocks: `.field-hint`, `.auth-toggle`, `.remembered-*`,
+  `.room-close-btn`, `.room-date-separator`, `.room-typing-indicator`,
+  `.room-loading`, `.sound-popup`.
+
+### Changed
+- Frontend dedup: new `useStatusToast`, `usePopover`, `filterTaverns` +
+  `recenterAfterFilter`, `mergePlacements` + `resetPresence` +
+  `withTransientError`, `login-utils.ts` (`displayLogin`/`loginKey`),
+  `CharacterCard`, `profileUrl` single source; constants centralized in
+  `lib/config.ts` (`LIEU_EGLISE`, `CHAT_SLASH_ALLOWLIST`, `WHISPER_DEDUP_MS`,
+  `RECONNECT_*`, `ECUS_PULSE_MS`, `PORTRAIT_WARN_TTL_MS`).
+- Backend dedup: single `socket_io()` builder in `network/` (`send_event` /
+  `send_payload` collapse 10× send blocks), `Session::close_tx` collapses
+  3× teardown, portrait canonicalization shared (`canonicalize_portrait_json`
+  + `code_visage_of`), `logs::append_line`, `keyring_soft`,
+  `default_browser_headers`, `From<AuthError> for AppError`.
+- Fixed unheard `ws-error` emits folded into `ws-closed` (was wedging
+  `is_connected` true); `tauri.conf.json` version realigned 0.5.5 → 0.5.8.
+
 ## [0.5.7] - 2026-09-14
 
 ### Fixed

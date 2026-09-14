@@ -3,6 +3,7 @@ import type { Tavern } from "../../lib/types";
 import { t } from "../../lib/i18n";
 import { ChevronLeft, ChevronRight, Filter, CheckboxChecked, CheckboxUnchecked } from "../../lib/utils/icons";
 import { normalizeText } from "../../lib/utils/text-utils";
+import { usePopover } from "../../lib/hooks/usePopover";
 
 // Night tavern interior: shared visual for the cards
 // (taverns have no image of their own).
@@ -36,6 +37,26 @@ function countyOf(ville: string): string {
 
 function displayCity(ville: string): string {
   return splitVille(ville).city;
+}
+
+// Shared tavern filtering (name query + town multi-select).
+function filterTaverns(taverns: Tavern[], cityFilter: ReadonlySet<string>, query: string): Tavern[] {
+  const q = normalizeText(query);
+  return taverns.filter((tav) => {
+    if (cityFilter.size > 0 && !cityFilter.has(tav.ville)) return false;
+    if (q && !normalizeText(tav.name).includes(q)) return false;
+    return true;
+  });
+}
+
+// Shared recenter after a filter change: keep the selection when still
+// visible, else fall back to the first result (caller selects it).
+function recenterAfterFilter(nextList: Tavern[], selectedId: number): { index: number; selectId: number | null } {
+  if (nextList.length === 0) return { index: 0, selectId: null };
+  const idx = nextList.findIndex((tav) => tav.id === selectedId);
+  if (idx >= 0) return { index: idx, selectId: null };
+  const first = nextList[0];
+  return { index: 0, selectId: first ? first.id : null };
 }
 
 type Props = {
@@ -104,14 +125,7 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
     [groupedVisibleCities]
   );
 
-  const filtered = useMemo(() => {
-    const q = normalizeText(query);
-    return taverns.filter((tav) => {
-      if (cityFilter.size > 0 && !cityFilter.has(tav.ville)) return false;
-      if (q && !normalizeText(tav.name).includes(q)) return false;
-      return true;
-    });
-  }, [taverns, cityFilter, query]);
+  const filtered = useMemo(() => filterTaverns(taverns, cityFilter, query), [taverns, cityFilter, query]);
 
   // Filter menu: refs of the button, popover and search field.
   const filterWrapRef = useRef<HTMLDivElement | null>(null);
@@ -124,24 +138,10 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
   const applyCityFilter = useCallback(
     (next: ReadonlySet<string>) => {
       setCityFilter(new Set(next));
-      const q = normalizeText(query);
-      const nextList = taverns.filter((tav) => {
-        if (next.size > 0 && !next.has(tav.ville)) return false;
-        if (q && !normalizeText(tav.name).includes(q)) return false;
-        return true;
-      });
-      if (nextList.length === 0) {
-        setCenterIndex(0);
-        return;
-      }
-      const idx = nextList.findIndex((tav) => tav.id === selectedId);
-      if (idx >= 0) {
-        setCenterIndex(idx);
-        return;
-      }
-      setCenterIndex(0);
-      const first = nextList[0];
-      if (first) onSelect(first.id);
+      const nextList = filterTaverns(taverns, next, query);
+      const { index, selectId } = recenterAfterFilter(nextList, selectedId);
+      setCenterIndex(index);
+      if (selectId !== null) onSelect(selectId);
     },
     [query, taverns, selectedId, onSelect]
   );
@@ -223,24 +223,10 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
   const applyQuery = useCallback(
     (value: string) => {
       setQuery(value);
-      const q = normalizeText(value);
-      const nextList = taverns.filter((tav) => {
-        if (cityFilter.size > 0 && !cityFilter.has(tav.ville)) return false;
-        if (q && !normalizeText(tav.name).includes(q)) return false;
-        return true;
-      });
-      if (nextList.length === 0) {
-        setCenterIndex(0);
-        return;
-      }
-      const idx = nextList.findIndex((tav) => tav.id === selectedId);
-      if (idx >= 0) {
-        setCenterIndex(idx);
-        return;
-      }
-      setCenterIndex(0);
-      const first = nextList[0];
-      if (first) onSelect(first.id);
+      const nextList = filterTaverns(taverns, cityFilter, value);
+      const { index, selectId } = recenterAfterFilter(nextList, selectedId);
+      setCenterIndex(index);
+      if (selectId !== null) onSelect(selectId);
     },
     [cityFilter, taverns, selectedId, onSelect]
   );
@@ -253,37 +239,12 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
     if (taverns.length > 0 && taverns[0].id !== selectedId) onSelect(taverns[0].id);
   }, [taverns, selectedId, onSelect]);
 
-  // Filter popover: toggle, outside click, Escape, focus handling.
-  const closeMenu = useCallback(() => {
-    setMenuOpen(false);
-    filterBtnRef.current?.focus();
-  }, []);
-
+  // Filter popover toggle (outside click + Escape handled by shared hook).
   const toggleMenu = useCallback(() => {
     setMenuOpen((open) => !open);
   }, []);
 
-  // Outside click (capture) + Escape: close and return focus to the button.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (!filterWrapRef.current?.contains(target)) setMenuOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        closeMenu();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [menuOpen, closeMenu]);
+  usePopover(menuOpen, filterWrapRef, filterBtnRef, setMenuOpen);
 
   // Focus the town search directly on open.
   useEffect(() => {

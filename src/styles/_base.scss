@@ -121,7 +121,7 @@
 
   /* Local tavern assets — bundled in src/assets/images/interieurTaverne/.
      Single source for CSS backgrounds (room.css uses var(--tavern-*)).
-     Remote-only chat art lives in src/lib/config.ts (CDN_SEND_BTN/_ICON). */
+     Remote-only chat art (send button/icon) stays as room.css hardcodes. */
   --tavern-bg: url("../assets/images/interieurTaverne/fondNormal_nuit.jpg");
   --tavern-cadre-vide: url("../assets/images/interieurTaverne/cadreVide.png");
   --tavern-cadre-plein: url("../assets/images/interieurTaverne/cadrePlein.png");

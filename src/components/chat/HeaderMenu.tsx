@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useId } from "preact/hooks";
+import { usePopover } from "../../lib/hooks/usePopover";
 import { t, locale, setLocale, SUPPORTED_LOCALES, type Locale } from "../../lib/i18n";
 import { MoreVertical, Copy, Check, ArrowClockwise } from "../../lib/utils/icons";
 import { getSoundMode, setSoundMode, SOUND_MODES, type SoundMode } from "../../lib/utils/sound";
@@ -26,12 +27,6 @@ export default function HeaderMenu({ onCopy, onRefreshPortraits }: Props) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuId = useId();
 
-  // Close and hand focus back to the trigger (Escape path).
-  const closeMenu = () => {
-    setOpen(false);
-    btnRef.current?.focus();
-  };
-
   const handleCopy = async () => {
     if (!onCopy) return;
     await onCopy();
@@ -50,28 +45,8 @@ export default function HeaderMenu({ onCopy, onRefreshPortraits }: Props) {
     setOpen(false);
   };
 
-  // Outside click (capture) + Escape, mirroring LanguageSwitcher: a click
-  // elsewhere just closes; Escape also restores trigger focus.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (!wrapRef.current?.contains(target)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        closeMenu();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [open ]);
+  // Outside click (capture) + Escape (shared hook; focus restore on Escape).
+  usePopover(open, wrapRef, btnRef, setOpen);
 
   // Move focus into the menu on open, landing on the first item.
   useEffect(() => {

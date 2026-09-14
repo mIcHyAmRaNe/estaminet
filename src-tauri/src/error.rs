@@ -52,6 +52,3 @@ impl From<AppError> for String {
         e.to_string()
     }
 }
-
-#[allow(dead_code)]
-pub type AppResult<T> = Result<T, AppError>;

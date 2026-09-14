@@ -1,6 +1,6 @@
 [package]
 name = "estaminet"
-version = "0.5.7"
+version = "0.5.8"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -31,7 +31,7 @@ wreq = { version = "0.16", features = ["cookies", "form", "json"] }
 wreq-util = "0.2"
 url = "2"
 rustls = { version = "0.23", features = ["ring"] }
-# socketioxide removed — unused server-side framework; client uses manual 42["event",...] via `socket_io()` helper in commands/chat.rs (tokio-tungstenite)
+# socketioxide removed — unused server-side framework; client uses manual 42["event",...] via `socket_io()` helper in network/ (tokio-tungstenite)
 thiserror = "2"
 dirs = "5"
 chrono = "0.4"

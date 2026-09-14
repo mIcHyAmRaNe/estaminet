@@ -1,7 +1,7 @@
 import type { ChatMessage } from "../../lib/types";
 import { ArrowRight, ArrowExit, Alert, WhisperIcon, ServiceBell } from "../../lib/utils/icons";
 import { computeMessageUnits } from "../../lib/utils/message-utils";
-import { isChopine } from "../../lib/utils/chat-guards";
+import { isChopineText } from "../../lib/utils/chat-guards";
 import { t } from "../../lib/i18n";
 import LinkifiedText from "./LinkifiedText";
 import choppeMini from "../../assets/images/interieurTaverne/iconeMini_choppe.png";
@@ -42,7 +42,7 @@ export default function MessageList({ messages, listRef, onScroll, players }: Pr
       {units.map((unit) => {
         if (unit.kind === "single") {
           const msg = unit.msg;
-          const chopine = isChopine(msg.content);
+          const chopine = isChopineText(msg.content);
           const isEntry = msg.type === "system" && msg.content.includes(enterMarker);
           const isExit = msg.type === "system" && msg.content.includes(leaveMarker);
           const isEmote = msg.type === "emote";

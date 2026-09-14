@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "preact/hooks";
 import { api } from "./api/tauri";
 import { t } from "./lib/i18n";
-import { DEFAULT_TAVERN_ID } from "./lib/config";
+import { DEFAULT_TAVERN_ID, DEFAULT_PLACES, CHAT_SLASH_ALLOWLIST } from "./lib/config";
 import { useTaverne } from "./lib/hooks/useTaverne";
 import { useBredouille } from "./lib/hooks/useBredouille";
 import { useRecents } from "./lib/hooks/useRecents";
@@ -33,7 +33,14 @@ export default function App() {
   // `connectingRef` is the synchronous anti-burst guard (double-click).
   const connectingRef = useRef(false);
 
-  const taverne = useTaverne(username, idLieu);
+  const tavernPlaces = taverns.find((t) => t.id === idLieu)?.places ?? DEFAULT_PLACES;
+  const taverne = useTaverne(username, idLieu, tavernPlaces);
+  useEffect(() => {
+    taverne.setTotalPlaces(tavernPlaces);
+    taverne.setPlaces(Array(tavernPlaces).fill(null));
+    // Sync on tavern selection / list load (setters are stable).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tavernPlaces]);
   const bredouille = useBredouille(taverne.isConnected);
   const { recents, push: pushRecent } = useRecents();
   // Shell-level silent update check (banner renders phase-independently).
@@ -237,7 +244,7 @@ export default function App() {
     const raw = inputMessage.trim();
     if (!raw || !taverne.isConnected) return;
     if (raw.startsWith("/")) {
-      const allowed = ["/me ", "/faire ", "/emote ", "/w ", "/manger ", "/boire", "/boire "];
+      const allowed = CHAT_SLASH_ALLOWLIST;
       const ok = allowed.some((p) => raw === p.trim() || raw.startsWith(p));
       if (!ok) {
         bredouille.trigger(username || t("chat.you"));
@@ -273,7 +280,8 @@ export default function App() {
   };
 
   const handleChangePlace = async (idPlace: number) => {
-    if (idPlace < 0 || idPlace > 9) return;
+    const maxPlace = Math.max(0, taverne.totalPlaces - 1);
+    if (idPlace < 0 || idPlace > maxPlace) return;
     const occupant = taverne.places[idPlace];
     if (occupant) return;
     taverne.setSelectedPlace(idPlace);

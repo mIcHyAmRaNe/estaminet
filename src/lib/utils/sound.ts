@@ -45,27 +45,10 @@ export function setSoundMode(mode: SoundMode): void {
   }
 }
 
-// Compat: "enabled" means SFX audible (tout or son).
-export function isSoundEnabled(): boolean {
-  const m = getSoundMode();
-  return m === "tout" || m === "son";
-}
-
-export function setSoundEnabled(v: boolean): void {
-  setSoundMode(v ? "tout" : "aucun");
-}
-
 // Official jouerSonAction gate: action/SFX sounds play on tout or son.
 export function isSfxAudible(mode?: SoundMode): boolean {
   const m = mode ?? getSoundMode();
   return m === "tout" || m === "son";
-}
-
-// Official music gate (no music bundled yet — always silent, kept for
-// future use alongside the persisted mode).
-export function isMusicAudible(mode?: SoundMode): boolean {
-  const m = mode ?? getSoundMode();
-  return m === "tout" || m === "musique";
 }
 
 let audio: HTMLAudioElement | null = null;

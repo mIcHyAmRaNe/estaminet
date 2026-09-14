@@ -11,7 +11,7 @@ export const MSG_HISTORY_LIMIT = 200; // keep last N in memory
 
 // Places
 export const PLACE_RESERVED_DEFAULT = [0] as const;
-export const PLACES_ALLOWED = [3, 8, 9, 10] as const;
+export const DEFAULT_PLACES = 8 as const;
 
 // Auto-seat
 export const AUTO_QUIET_MS = 600;
@@ -59,7 +59,6 @@ export const WS_CLOSE_VOLUNTARY = "voluntary-close";
 
 // URLs (display only — keep canonical in Rust config.rs)
 export const RK_BASE = "https://www.renaissancekingdoms.com";
-export const CHAT_WSS_HOST = "chat.lesroyaumes.com";
 // Midas calques: this root is only used to BUILD calque URLs — the bytes are
 // fetched through the `fetch_portrait_asset` Rust proxy (commands/taverne.rs)
 // and returned as data: URLs, so the webview runs no CORS checks. Direct
@@ -68,7 +67,20 @@ export const CHAT_WSS_HOST = "chat.lesroyaumes.com";
 // images are bundled locally instead — see the --tavern-* vars in
 // src/styles/_base.scss (single source for CSS).
 export const MIDAS_CDN = "https://lesroyaumes.cdn.oxv.fr/images/";
-// Remote-only chat art (no local bundle, no --tavern-* equivalent):
-// canonical URLs kept here so room.css hardcodes stay in one place.
-export const CDN_SEND_BTN = "https://lesroyaumes.cdn.oxv.fr/images/ui_bouton_retourBleu_@2X.png";
-export const CDN_SEND_ICON = "https://lesroyaumes.cdn.oxv.fr/images/ui_iconeEnvoi_@2X.png";
+
+// Tavern ground type for church mode (official "eglise"): drives reserved-seat
+// icons + drink-feature gating. Single source (was hardcoded in ChatRoom/ChatHeader).
+export const LIEU_EGLISE = "eglise";
+
+// Chat slash-command allowlist (official commands only; others trigger bredouille).
+export const CHAT_SLASH_ALLOWLIST: readonly string[] = ["/me ", "/faire ", "/emote ", "/w ", "/manger ", "/boire", "/boire "];
+
+// Whisper dedup window (full + short forms of the same message).
+export const WHISPER_DEDUP_MS = 10000;
+// Auto-reconnect backoff (single-flight socket handler).
+export const RECONNECT_MAX_ATTEMPTS = 5;
+export const RECONNECT_MAX_DELAY_MS = 10000;
+// Ecus balance pulse (matches official ecus_moins flash duration).
+export const ECUS_PULSE_MS = 2500;
+// Portrait fallback toast TTL (latest-wins).
+export const PORTRAIT_WARN_TTL_MS = 6000;

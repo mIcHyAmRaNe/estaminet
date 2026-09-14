@@ -19,7 +19,6 @@ import whisperSvg from "../../assets/icons/fluent/ic_fluent_chat_24_regular.svg?
 import copySvg from "../../assets/icons/fluent/ic_fluent_copy_24_regular.svg?raw";
 import checkSvg from "../../assets/icons/fluent/ic_fluent_checkmark_24_regular.svg?raw";
 import filterSvg from "../../assets/icons/fluent/ic_fluent_filter_24_regular.svg?raw";
-import moonSvg from "../../assets/icons/fluent/ic_fluent_weather_moon_24_regular.svg?raw";
 import localLanguageSvg from "../../assets/icons/fluent/ic_fluent_local_language_24_regular.svg?raw";
 import checkboxCheckedSvg from "../../assets/icons/fluent/ic_fluent_checkbox_checked_24_regular.svg?raw";
 import checkboxUncheckedSvg from "../../assets/icons/fluent/ic_fluent_checkbox_unchecked_24_regular.svg?raw";
@@ -70,7 +69,6 @@ export const WhisperIcon = makeFluentIcon(whisperSvg);
 export const Copy = makeFluentIcon(copySvg);
 export const Check = makeFluentIcon(checkSvg);
 export const Filter = makeFluentIcon(filterSvg);
-export const Moon = makeFluentIcon(moonSvg);
 export const LocalLanguage = makeFluentIcon(localLanguageSvg);
 export const CheckboxChecked = makeFluentIcon(checkboxCheckedSvg);
 export const CheckboxUnchecked = makeFluentIcon(checkboxUncheckedSvg);

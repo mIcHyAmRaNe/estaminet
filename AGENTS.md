@@ -54,14 +54,14 @@ src-tauri/src/
 - Hooks live in `src/lib/hooks/` (single source). Do not duplicate in `src/hooks/`.
 - Centralize constants in `src/lib/config.ts` (Rust: `src-tauri/src/config.rs`). No hardcoded tavern IDs / URLs in components or sockets.
 - Errors: Rust uses `AppError` (thiserror) → mapped to `String` for Tauri; frontend `api.*` surfaces typed errors. Use `utils/logs.rs` + `utils/cookies.rs` — no duplication in `network/socket.rs`.
-- Chat protocol: `42["event", ...]` (socket.io). Keep builders in `commands/chat.rs` (`socket_io()` helper).
+- Chat protocol: `42["event", ...]` (socket.io). Keep builders in `network/` (`socket_io()` helper, used by `commands/chat.rs` + `network/socket.rs`).
 - Styles: SCSS via Vite. `_base.scss` holds tokens, `views/*` holds view CSS. Keep `index.css` as `@import` barrel.
 
 ## Tauri commands (lib.rs)
 
-`get_taverns`, `get_taverne_places`, `get_portrait_json`, `fetch_portrait_asset`, `login`, `try_auto_login`, `get_saved_login`, `is_connected`, `get_session_login`, `logout`, `disconnect`, `ws_connect`, `ws_send`, `change_place`, `save_chat_log`, `get_log_dir`, `get_full_log`
+`get_taverns`, `get_portrait_json`, `get_own_portrait_json`, `fetch_portrait_asset`, `login`, `try_auto_login`, `try_auto_login_for`, `get_saved_login`, `list_accounts`, `save_account`, `remove_account`, `ws_disconnect`, `logout`, `disconnect`, `is_connected`, `get_session_login`, `ws_connect`, `ws_send`, `ws_typing_start`, `ws_typing_stop`, `change_place`, `taverne_offre_verre`, `taverne_tournee_generale`, `taverne_accepte_alcool`, `taverne_kick`, `taverne_ban`, `taverne_unban`, `save_chat_log`, `get_log_dir`, `get_full_log`
 
-Events: `ws-message`, `ws-connected`, `ws-closed`, `ws-error`.
+Events: `ws-message`, `ws-connected`, `ws-closed`, `portrait-warning`.
 
 ## Common tasks
 
