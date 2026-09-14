@@ -352,6 +352,38 @@
 .room-message.whisper .room-msg-username { color:#e879a8; }
 .room-message.system { background: transparent; color:#ddbfaa; font-style: italic; text-align:center; font-size: var(--text-xs); padding: 4px; }
 .room-message.error { background: rgba(217,44,44,0.12); color:#f38ba8; border-left: 3px solid var(--danger); }
+/* Portrait fallback notice: yellow warning line (toast companion). */
+.room-message.warning { background: rgba(255,215,0,0.08); color:#ffd700; border-left: 3px solid #ffd700; }
+
+/* Portrait fallback toast: floating yellow notice pinned to the top of
+   the room (same pattern as the .auth-status toasts, room-scoped). */
+.room-toast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 1100;
+  width: max-content;
+  max-width: min(480px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-lg);
+  animation: roomToastIn 0.28s var(--ease-standard);
+}
+.room-toast--warning {
+  background: var(--surface-solid);
+  color: #ffd700;
+  border: 1px solid color-mix(in oklab, #ffd700 30%, transparent);
+}
+@keyframes roomToastIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .room-toast { animation: none; }
+}
 
 .room-msg-header { display:flex; justify-content:space-between; margin-bottom: var(--space-1); }
 .room-msg-username { color:#fff; font-weight:700; font-size: var(--text-xs); }

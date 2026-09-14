@@ -373,7 +373,7 @@ export default function ChatRoom(props: ChatRoomProps) {
                       <img class="place-status-icon" src={badge.icon} alt="" title={t(badge.labelKey)} />
                     )}
                     <div class="character-portrait">
-                      <AvatarPortrait login={name} />
+                      <AvatarPortrait login={name} own={isOwn} />
                     </div>
                     <span class="character-name" title={name}>{name}</span>                    <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
                       {isTyping ? (
@@ -428,7 +428,7 @@ export default function ChatRoom(props: ChatRoomProps) {
                       style={{ position: "relative", left: "auto", top: "auto", transform: "none", width: 84, opacity: 1, animation: "none" }}
                     >
                       <div class="character-portrait" style={{ width: 64, height: 64 }}>
-                        <AvatarPortrait login={name} />
+                        <AvatarPortrait login={name} own={isOwn} />
                       </div>
                       <span class="character-name" title={name} style={{ maxWidth: 80 }}>{name}</span>
                       <span class={`character-last-msg${isEmote ? " emote" : ""}${chopine ? " chopine" : ""}`}>
@@ -546,6 +546,13 @@ export default function ChatRoom(props: ChatRoomProps) {
           </div>
         </div>
       </div>
+      {/* Portrait fallback warning: yellow floating toast (latest-wins,
+          auto-dismissed by the hook after ~6s). */}
+      {props.portraitWarning && (
+        <div class="room-toast room-toast--warning" role="status" aria-live="polite">
+          {props.portraitWarning}
+        </div>
+      )}
       {/* Lane F1 — tournée générale overlay (auto-dismissed after ~5s). */}
       {props.tournee && (
         <TourneeOverlay login={props.tournee.login} onClose={() => props.clearTournee?.()} />

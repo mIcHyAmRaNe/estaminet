@@ -175,6 +175,9 @@ export const fr: Record<string, string> = {
   'tavern.fatalRefreshMsg': 'Rechargez la page pour voir la nouvelle taverne.',
   'tavern.refreshNow': 'Rafraîchir',
   'tavern.floodMute': 'Silence pendant 30 secondes (flood).',
+  // Portrait fallback warnings (toast + chat line, once per fallback).
+  'portrait.warnCached': 'Portrait non actualisé — avatar précédent affiché aux autres joueurs.',
+  'portrait.warnDefault': 'Portrait non récupéré — tenue par défaut affichée aux autres joueurs.',
   // Lane F1 — taverneErreur mapping (parametre interpolated where relevant)
   'tavernErr.emptyPlate': 'Votre assiette est vide.',
   'tavernErr.notEnoughMoney': "Vous n'avez pas assez d'argent.",

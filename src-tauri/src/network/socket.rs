@@ -55,15 +55,40 @@ fn build_default_portrait(login: &str) -> String {
     .to_string()
 }
 
-fn build_change_salon(login: &str, id_lieu: u64, portrait_json: &str) -> String {
+pub(crate) fn build_change_salon(login: &str, id_lieu: u64, portrait_json: &str) -> String {
     let trimmed = portrait_json.trim();
-    let portrait = if !trimmed.is_empty()
+    let mut portrait_value: serde_json::Value = if !trimmed.is_empty()
         && serde_json::from_str::<serde_json::Value>(trimmed).is_ok()
     {
-        trimmed.to_string()
+        serde_json::from_str(trimmed).unwrap()
     } else {
-        build_default_portrait(login)
+        serde_json::from_str(&build_default_portrait(login)).unwrap()
     };
+    // Normalize portrait login to session login (display case diverges from page)
+    if let Some(obj) = portrait_value.as_object_mut() {
+        if let Some(_log) = obj.get("login").and_then(|v| v.as_str()) {
+            obj.insert("login".to_string(), serde_json::Value::String(login.to_string()));
+        }
+    }
+    // Filter equipement to worn-only (miniature == "o") to match browser send
+    if let Some(obj) = portrait_value.as_object_mut() {
+        if let Some(arr) = obj.get_mut("equipement").and_then(|v| v.as_array_mut()) {
+            arr.retain(|item| {
+                item.get("miniature")
+                    .and_then(|v| v.as_str())
+                    .map_or(false, |m| m == "o")
+            });
+        }
+    }
+    let portrait = portrait_value.to_string();
+    let visage: String = serde_json::from_str::<serde_json::Value>(&portrait)
+        .ok()
+        .and_then(|v| v.get("codeVisage")?.as_str().map(str::to_owned))
+        .unwrap_or_else(|| "<none>".into());
+    logs::log_info(&format!(
+        "changeSalon id_lieu={id_lieu} codeVisage={visage} ({} bytes)",
+        portrait.len()
+    ));
     json!({
         "typeLieu": "taverne",
         "IDLieu": id_lieu,
@@ -207,11 +232,24 @@ fn register_handlers(
 
         // Send the initial messages (changeSalon + refresh)
         for payload in [
-            change_salon,
+            change_salon.clone(),
             r#"42["taverneMajPerso"]"#.to_string(),
             r#"42["taverneMajMenus"]"#.to_string(),
         ] {
             logs::log_info(&format!("Initial send: {payload}"));
+            // Raw-send log to file for byte-exact diff verification
+            if payload.starts_with("42[\"changeSalon\"") {
+                let tav_path = crate::utils::logs::log_path_for(tavern_id).ok();
+                if let Some(p) = tav_path {
+                    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+                    let entry = format!("[{ts}] SEND {payload}\n");
+                    let _ = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(p)
+                        .and_then(|mut f| std::io::Write::write_all(&mut f, entry.as_bytes()));
+                }
+            }
             if write.send(payload.into()).await.is_err() {
                 logs::log_error("Initial send error");
                 return;

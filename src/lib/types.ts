@@ -6,7 +6,7 @@ export interface Tavern {
   image?: string;
 }
 
-export type MessageType = "normal" | "emote" | "whisper" | "system" | "error" | "drink" | "meal" | "tournee";
+export type MessageType = "normal" | "emote" | "whisper" | "system" | "error" | "warning" | "drink" | "meal" | "tournee";
 
 // Lane F1 — social/economy chat lines:
 //  drink   = taverneOffreVerre / taverneOffreTisane / self drink (nomMenu == "alcool")
@@ -167,6 +167,9 @@ export interface ChatRoomProps {
   needsRefresh?: boolean;
   // Lane F3 — flood mute (taverneBanFlood): input disabled while true.
   floodMuted?: boolean;
+  // Portrait fallback notice (Rust `portrait-warning` event): yellow
+  // floating toast text; null when none. Wired in App.tsx from useTaverne.
+  portraitWarning?: string | null;
   // Lane F3 — moderation (PlayerMenu; server enforces rights).
   onKickPlayer?: (login: string) => void;
   onBanPlayer?: (login: string) => void;

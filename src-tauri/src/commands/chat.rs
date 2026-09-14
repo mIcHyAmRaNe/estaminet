@@ -77,10 +77,45 @@ async fn ws_connect_inner(
     };
     let portrait_json =
         match crate::commands::taverne::fetch_own_portrait_json(&client, &jar, &login).await {
-            Ok(p) => p,
+            // Fresh-first on every ws_connect: RP outfit changes apply on
+            // quit + re-enter. The last-good JSON is cached per login.
+            Ok(p) => {
+                logs::log_info(&format!(
+                    "own portrait fresh ok (codeVisage={})",
+                    crate::commands::taverne::code_visage_of(&p)
+                ));
+                let mut cache = state.portrait_cache.lock().await;
+                cache.insert(login.trim().to_lowercase(), p.clone());
+                p
+            }
             Err(e) => {
-                logs::log_info(&format!("own portrait fetch failed, using default: {e}"));
-                String::new()
+                // Zoom fetch failed: last-good cache, else the default
+                // outfit (only when never fetched). The frontend is told
+                // via `portrait-warning` (toast + chat line); silence here
+                // caused the self/others avatar divergence.
+                let cached = state
+                    .portrait_cache
+                    .lock()
+                    .await
+                    .get(&login.trim().to_lowercase())
+                    .cloned();
+                match cached {
+                    Some(p) => {
+                        logs::log_info(&format!(
+                            "own portrait fetch failed ({e}), using last-good cache (codeVisage={})",
+                            crate::commands::taverne::code_visage_of(&p)
+                        ));
+                        let _ = app.emit("portrait-warning", "cached");
+                        p
+                    }
+                    None => {
+                        logs::log_info(&format!(
+                            "own portrait fetch failed ({e}), no cache: default outfit"
+                        ));
+                        let _ = app.emit("portrait-warning", "default");
+                        String::new()
+                    }
+                }
             }
         };
     crate::network::socket::ws_connect(&login, &token, &jar, id_lieu, app.clone(), portrait_json)

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use wreq::{cookie::Jar, Client};
@@ -24,4 +25,9 @@ pub struct AppState {
     /// (`upsert`/`remove`) so concurrent account operations never
     /// lose an entry.
     pub cred_lock: Mutex<()>,
+    /// Last-good own portrait JSON per login (lowercased key), as sent in
+    /// the last successful `changeSalon`. Fresh-first fetch on every
+    /// `ws_connect` keeps RP outfit changes safe; this cache is ONLY a
+    /// fallback when the Zoom fetch fails (never served blindly).
+    pub portrait_cache: Mutex<HashMap<String, String>>,
 }

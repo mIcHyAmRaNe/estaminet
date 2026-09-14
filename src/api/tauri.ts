@@ -72,6 +72,11 @@ export const api = {
 
   getPortraitJson: (login: string) => invoke<string>("get_portrait_json", { login }),
 
+  // Exact portrait JSON last sent in changeSalon for self (fresh-first
+  // fetch or last-good cache, "" when never fetched). Self-view mirrors
+  // what other players see — never a divergent fetch.
+  getOwnPortraitJson: () => invoke<string>("get_own_portrait_json"),
+
   isConnected: () => invoke<boolean>("is_connected"),
 
   getSessionLogin: () => invoke<string | null>("get_session_login"),

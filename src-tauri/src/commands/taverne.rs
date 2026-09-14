@@ -381,10 +381,20 @@ async fn inner_get_taverne_places(
     Err(last_err.unwrap_or_else(|| AppError::InvalidFormat("NombrePlaces not found".into())))
 }
 
-async fn inner_get_portrait_json(
+/// codeVisage field of a portrait JSON (diagnostics: fresh/cached/default).
+pub(crate) fn code_visage_of(json_str: &str) -> String {
+    serde_json::from_str::<serde_json::Value>(json_str)
+        .ok()
+        .and_then(|v| v.get("codeVisage")?.as_str().map(str::to_owned))
+        .unwrap_or_else(|| "<none>".into())
+}
+
+async fn fetch_portrait_page(
     client: &wreq::Client,
     jar: &std::sync::Arc<wreq::cookie::Jar>,
+    base_url: &str,
     login: &str,
+    label: &str,
 ) -> Result<String, AppError> {
     let cookie_header = extract_cookies(jar);
     if cookie_header.is_empty() {
@@ -393,7 +403,7 @@ async fn inner_get_portrait_json(
 
     // URL-encoded login (percent-encoding: accented chars → %XX UTF-8).
     let encoded = percent_encode_login(login);
-    let url = format!("{}?login={}", config::URL_FICHE_PERSONNAGE, encoded);
+    let url = format!("{base_url}?login={encoded}");
 
     let resp = client
         .get(&url)
@@ -402,45 +412,11 @@ async fn inner_get_portrait_json(
         .header("Referer", config::REFERER)
         .send()
         .await
-        .map_err(|e| AppError::Network(format!("Portrait request failed: {e}")))?;
-
-    if !resp.status().is_success() {
-        return Err(AppError::Network(format!("HTTP {} for portrait", resp.status())));
-    }
-
-    let text = resp
-        .text()
-        .await
-        .map_err(|e| AppError::Network(format!("Error reading portrait: {e}")))?;
-
-    extract_portrait_json(&text, login)
-}
-
-pub(crate) async fn fetch_own_portrait_json(
-    client: &wreq::Client,
-    jar: &std::sync::Arc<wreq::cookie::Jar>,
-    login: &str,
-) -> Result<String, AppError> {
-    let cookie_header = extract_cookies(jar);
-    if cookie_header.is_empty() {
-        return Err(AppError::Network("No cookie".into()));
-    }
-
-    let encoded = percent_encode_login(login);
-    let url = format!("{}?login={}", config::URL_ZOOM_PERSONNAGE, encoded);
-
-    let resp = client
-        .get(&url)
-        .header("Cookie", cookie_header.clone())
-        .header("User-Agent", config::USER_AGENT)
-        .header("Referer", config::REFERER)
-        .send()
-        .await
-        .map_err(|e| AppError::Network(format!("Own portrait request failed: {e}")))?;
+        .map_err(|e| AppError::Network(format!("Portrait request failed ({label}): {e}")))?;
 
     if !resp.status().is_success() {
         return Err(AppError::Network(format!(
-            "HTTP {} for own portrait",
+            "HTTP {} for portrait ({label})",
             resp.status()
         )));
     }
@@ -448,9 +424,41 @@ pub(crate) async fn fetch_own_portrait_json(
     let text = resp
         .text()
         .await
-        .map_err(|e| AppError::Network(format!("Error reading own portrait: {e}")))?;
+        .map_err(|e| AppError::Network(format!("Error reading portrait ({label}): {e}")))?;
 
     extract_portrait_json(&text, login)
+}
+
+async fn inner_get_portrait_json(
+    client: &wreq::Client,
+    jar: &std::sync::Arc<wreq::cookie::Jar>,
+    login: &str,
+) -> Result<String, AppError> {
+    // Lightweight Zoom endpoint first (same page the changeSalon fetch
+    // uses); the heavy Fiche page stays as a dead fallback only.
+    match fetch_portrait_page(client, jar, config::URL_ZOOM_PERSONNAGE, login, "zoom").await {
+        Ok(json) => {
+            logs::log_info(&format!(
+                "portrait '{login}': zoom ok (codeVisage={})",
+                code_visage_of(&json)
+            ));
+            Ok(json)
+        }
+        Err(zoom_err) => {
+            logs::log_info(&format!(
+                "portrait '{login}': zoom failed ({zoom_err}), trying fiche"
+            ));
+            fetch_portrait_page(client, jar, config::URL_FICHE_PERSONNAGE, login, "fiche").await
+        }
+    }
+}
+
+pub(crate) async fn fetch_own_portrait_json(
+    client: &wreq::Client,
+    jar: &std::sync::Arc<wreq::cookie::Jar>,
+    login: &str,
+) -> Result<String, AppError> {
+    fetch_portrait_page(client, jar, config::URL_ZOOM_PERSONNAGE, login, "zoom-own").await
 }
 
 // ---------- Tauri commands (map AppError -> String consistently) ----------
@@ -477,6 +485,24 @@ pub async fn get_portrait_json(state: State<'_, AppState>, login: String) -> Res
     inner_get_portrait_json(&client, &jar, &login)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Exact portrait JSON last sent in `changeSalon` for the session login
+/// (fresh-first fetch result, or last-good cache, or empty when never
+/// fetched). The self-view renders this so it mirrors what other players
+/// see — never a divergent Fiche fetch.
+#[tauri::command]
+pub async fn get_own_portrait_json(state: State<'_, AppState>) -> Result<String, String> {
+    let login = {
+        let s = state.session.lock().await;
+        let s = s.as_ref().ok_or_else(|| AppError::NotConnected.to_string())?;
+        s.login.clone()
+    };
+    let cache = state.portrait_cache.lock().await;
+    Ok(cache
+        .get(&login.trim().to_lowercase())
+        .cloned()
+        .unwrap_or_default())
 }
 
 // ---------- portrait assets: oxv CDN proxy (CORS-free calque loading) ----------

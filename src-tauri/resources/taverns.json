@@ -616,19 +616,244 @@
       ]
     },
     {
-	  "name": "Inconnue",
-	  "taverns": [
-	    {
-	      "tavern_id": 85905,
-	      "tavern_name": null,
-	      "description": null
-	    },
-	    {
-	      "tavern_id": 47599,
-	      "tavern_name": null,
-	      "description": null
-	    }
-	  ]
-	}
+      "name": "Inconnue",
+      "taverns": [
+        {
+          "tavern_id": 85905,
+          "tavern_name": null,
+          "description": null
+        },
+        {
+          "tavern_id": 47599,
+          "tavern_name": null,
+          "description": null
+        }
+      ]
+    },
+    {
+      "name": "Bordeaux (Comté Guyenne)",
+      "taverns": [
+        {
+          "tavern_id": 53137,
+          "tavern_name": "🍺⚓🌙 TAVERNE DU PORT DE LA LUNE 🌙⚓🍺",
+          "description": "BIENVENUE DANS LA TAVERNE DU PORT DE BORDEAUX ! VOICI NOTRE CARTE : BIERE DU MONASTERE DE SAINTE ILLINDA🍺 : 0,85 ECU - MENU DU MOUSSE : 2 MAÏS 🌽🌽 : 5,95 ECUS - MENU DU CAPITAINE : 3 MAÏS 🌽🌽🌽 : 8,95 ECUS BON APPETIT !"
+        },
+        {
+          "tavern_id": 19327,
+          "tavern_name": "☘ ⚓🍺 La Municipale Bordelaise🍺 ⚓☘",
+          "description": "Taverne municipale. Bière à 0,90 écu, menus à partir de 5,00 écus. Dernier code cadeau : GQRVT6DR36 KG1NVVR0LX. ―🍞― Taverne Solidaire―🍞― Parce qu'aucun de notre ville ne doit souffrir de la faim, la Mairie met en place le Pain Solidaire au sein de notre Taverne Municipale. Un principe simple, fondé sur la fraternité, la confiance et la bonne foi de chacun : ceux qui ont beaucoup partagent avec ceux qui ont trop peu. À compter de ce jour, deux options s'offrent à vous au comptoir : 🍞Le Menu du Bienfaiteur (2 points de faim = 2 maïs ou 1 pain) - Un repas simple et nourrissant, au tarif de 750 deniers. En choisissant ce menu, vous ne payez pas seulement votre repas : la différence alimente directement la bourse solidaire qui finance les menus des plus modestes. 🍞Le Menu du Nécessiteux (2 points de faim = 2 maïs ou 1 pain) - Un repas simple et nourrissant destiné aux voyageurs démunis, aux artisans en difficulté et victimes de larcins. Jouez le jeu pour le bien commun."
+        },
+        {
+          "tavern_id": 82385,
+          "tavern_name": "🔥 Au feu glacé - bains bordelais ❄",
+          "description": "Bienvenue à toutes et à tous dans nos bains bordelais. Dans une immense pièce chauffée, dès votre arrivée, vous trouverez 3 vestiaires individuels et 2 collectifs afin de vous déshabiller et vous rhabiller en sortant. 3 bains seront à votre disposition. - Un bain bleu, central, le bain principal pour vous délasser, discuter... - Un bain vert, familial, sur la gauche, entouré de haies végétales afin de profiter tranquillement... - un bain rouge, au fond, entouré de haies végétales, éclairé de lumière tamisée lui aussi, pour les personnes ayant envie de plus de piquant, de moments tendres, câlins... Un bar vous attend près du bain bleu pour vos consommations. Quelques tables et chaises sont à votre disposition dans un éclairage doux. Respect et bonne humeur sont de mise ici. Bon séjour à Bordeaux"
+        },
+        {
+          "tavern_id": 85417,
+          "tavern_name": "Au Fier Doryphore",
+          "description": "Dans le quartier Saint-Eloi, à deux dizaines de pas de la Grosse Cloche, se tient cet établissement: robuste, sobre et élégant. Heureux le vendangeur, il sera aux premières loges pour s'entendre appeler à l'ouvrage. Pour les autres, il y a à boire, à souper, et de quoi coucher, si le logis est loin."
+        },
+        {
+          "tavern_id": 87269,
+          "tavern_name": "Le Paradis Sur Terre",
+          "description": "Repas classique à base de maïs à 5.60 écus (2 PF) (soit le maïs à 2.80). Repas pour Érudit à base de maïs à 8.40 écus (3 PF) (soit le maïs à 2.80). Et la bière n'est qu'à 80 deniers."
+        },
+        {
+          "tavern_id": 85855,
+          "tavern_name": "Au bord du Lac",
+          "description": "[ce n'est pas une taverne, merci de respecter le lieu ! ]"
+        },
+        {
+          "tavern_id": 85924,
+          "tavern_name": "La Grise Echarpe",
+          "description": "Simple bâtisse sentant bon la bière et le houblon. Sont servies les bières signatures du patron (sur demande) et toujours la Blonde de St Illinda. Menus sur demande."
+        },
+        {
+          "tavern_id": 90603,
+          "tavern_name": "✽ Le comptoir des Marchands ambulants ✽【CMA】",
+          "description": "Ici, c'est ✽ Le Comptoir des Marchands Ambulants ✽【CMA】. On boit, on mange et on rit. Et puis on se retrouve ici pour débattre, marchander et acquérir des marchandises à bon prix... ► Menu à 5,25 écus (2 bons maïs chauds) ► Menu à 7,50 écus (3 bons maïs chauds) ► Bière à 0,85 écus ► La tisane gratuite pour les autres ! N'hésitez pas à envoyer une missive à Chipsou si vous avez des marchandises à proposer..."
+        },
+        {
+          "tavern_id": 86932,
+          "tavern_name": "Chez les Amazones",
+          "description": "Taverne des Amazones. Lieux de rencontre pour discuté ,se voir , rigolée ,et se détendre . Dans la pièce arrière on trouve un grand bain Thermal ,pour si relaxée voir même y nager. Nourriture: Pain à 5,50 écus = 2 points faim. Pain farci au Maïs à 8 écus = 3 points de faim. Boisson: Bière, Vin, Alccol, limonade, Tisane le tout a 1 écus. Soyez les bienvenus chez les Amazones"
+        },
+        {
+          "tavern_id": 84456,
+          "tavern_name": "Falconia",
+          "description": "Si vous avez besoin de mercenaires ou de tout autre type de coopération, envoyez-nous un pigeon."
+        },
+        {
+          "tavern_id": 61853,
+          "tavern_name": "𝕃𝕒 ℂ𝕙𝕒𝕣𝕡𝕖𝕟𝕥𝕖 𝔸𝕦 𝔹𝕠𝕚𝕤 𝔻𝕠𝕣𝕞𝕒𝕟𝕥",
+          "description": "-------------- 𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒖𝒆 𝒂̀ 𝒍𝒂 𝑪𝒉𝒂𝒓𝒑𝒆𝒏𝒕𝒆 𝒂𝒖 𝑩𝒐𝒊𝒔 𝑫𝒐𝒓𝒎𝒂𝒏𝒕 ---------- L'ORIGINE. On raconte que, bien avant sa création en décembre 1468, le propriétaire un charpentier fou aussi têtu que talentueux passait ses nuits à parler au bois qu'il sculptait et qu'il avait lui même abattu en forêt de Bazas son village natif. Le Charpentier rêveur et obstiné forçait de ses mains le bois à ses convenances, et à l'aube le travail terminé et le repos bien mérité le bois grinçait toujours et aussi fort que les ronflements de son concepteur. Ce bois, sans doute, avait il plus d'histoire à raconté de ses siècles passé en forêt, en ayant vu plus de fantôme vagabonder que de bûch..."
+        },
+        {
+          "tavern_id": 84812,
+          "tavern_name": "La Chope Argentée",
+          "description": "Taverne avec dans la salle arrière un très grand bain thermal. Pain à 5,50 écus. Pain farci à 8,50 écus. Boissons ,bière,vin ,alcool ,tisane tout a 1 écus. Bonne journée à tous ."
+        },
+        {
+          "tavern_id": 81294,
+          "tavern_name": "La Succube Dorée",
+          "description": "RECHERCHE MARINS À LA CONSTITUTION D'UN ÉQUIPAGE. Présence du propriétaire : surtout après 22h (heure française). Portier : Salvatore. La Succube D'Or ne dort jamais. Ici peuvent se retrouver les honnis et les mal-aimés, et dans le réconfort des uns et des unes venir à oublier, qu'il n'existe peut-être pas soulier à votre pied, ainsi donc ne courrez plus l'amour dans lequel on ne peut se fier."
+        },
+        {
+          "tavern_id": 49619,
+          "tavern_name": "Les sortilèges du Dragon",
+          "description": "Bienvenus à tous. Ravitailllements le 05/09/1474. Stock : 365 sacs de Maïs, 1849 Bières. Menu à base de Maïs uniquement Petite assiette Maison ( 2 PF ) -----&gt; 5.50 écus Grande assiette Maison ( 3 PF ) -----&gt; 8.25 écus"
+        },
+        {
+          "tavern_id": 85069,
+          "tavern_name": "Au Rocher Embrasé",
+          "description": "Sur les quais animés de Bordeaux, Au Rocher Embrasé se dresse comme un bastion de pierre noire, marqué par les embruns et le temps. Son vaste foyer éclaire la salle emplie d'odeurs de vin, de bière et de bois brûlé, où marins, marchands et voyageurs viennent se réchauffer et partager leurs récits. Les tonneaux d'Aquitaine ornent les murs, tandis que la terrasse surplombe doucement la Garonne, bercée par le chant des navires. Le nom de la taverne évoque la lueur chaleureuse d'un feu ancestral, guidant les âmes égarées au port, promesse d'un refuge et d'un breuvage doré au cœur du tumulte maritime."
+        },
+        {
+          "tavern_id": 84807,
+          "tavern_name": "Lo Banastié",
+          "description": "Réouverture après travaux. Taverne non fumeurs. Attention à toi qui entre icelieu, tu viens de mettre un pied en Occitanie. La patronne cherche des costauds pour des missions d'escorte. Maigrichons et fifres s'abstenir. Prix de l'escorte 10 écus par jorn et par escorteur. Dans sa réserve, Paquita range tout ce qui lui est utile pour confectionner les repas qu'elle sert aux clients : jambons et saucissons, andouilles et pâtés, gibier à poils et à plumes, jattes de crème et bidons de lait disputent la place au fruits, frais, conservés sur des clayettes, confits ou secs, que la tavernière dispose sur un présentoir et qu'elle picore en passant. Les poissons séchés, enfilés festonnent les poutres, d'autres reposent dans des bocaux de saumure. Des tresses d'ail ou d'oignons ponctuent ces guirlandes de loin en loin, ajoutant leur couleur, rose, blanc, blond, rouge, de leur pelure satinée au tableau ainsi composé."
+        },
+        {
+          "tavern_id": 74140,
+          "tavern_name": "Aux 50 Nuances de Bjorn",
+          "description": "⚠️Tableau des scores de Lice: VENEZ DÉFIER LE GÉANT ⚠️ Victoires: 25 - Défaites: 24. Bienvenue aux 50 Nuances de Bjorn: Auberge festive située près du port! La porte colossale est aux dimensions du patron dont le cœur est aussi sublime que sa fourrure d'ours: la légende voulant qu'il soit véritablement brun de partout. Le décor est tout de bois et orné d'objets racontant ses aventures: cailloux, cornes, armes, et autres babioles. Au parfum boisé se mêle celui des chaudrons sur le feu: toujours un festin viandeux préparé par les soins de Rayray, mijote. Le mobilier est neuf, tout comme le trône à roulettes de la tavernière! À l'étage, 3 chambres sont disponibles uniquement sur demande. Vin chaud, blonde de Saint-illinda, liqueur aux pommes et tisane du moment, vous sont proposés. Forgeron sur demande: Boucliers et Epées serties, Colliers, Bracelets, Parrures, Epéepillon."
+        },
+        {
+          "tavern_id": 90983,
+          "tavern_name": "Tekirdağ-ı Koruma ve Yaşatma Derneği",
+          "description": "Tekirdağ'ı Koruma ve Yaşatma Derneği Bordeaux şubesi iftiharla sunar efendim."
+        },
+        {
+          "tavern_id": 89013,
+          "tavern_name": "Au cassedale 🇨🇵",
+          "description": "Je vous invite moi alehex boulanger de Bordeaux pour partager un jambon-beurre. Pour la somme de 5ecus 30deniers. Et son épis triple de maïs pour 8écus 50deniers. pour la gourmandise. Les jambon sec un peut partout pour que l'odeur qui donne faim. Je vous souhaite un bon appétit et une bonne buvette. Pour les buveurs la bibine sera au prix d'achat. Passer un bon moment ici. Alehex"
+        },
+        {
+          "tavern_id": 88003,
+          "tavern_name": "🥰🍺🙈🙉🙊Au ROckstore🥰🍺🙊🙉🙈",
+          "description": "La taverne des amis d'abord Au Rocstore. Tout accroché au port se dresse LE ROCSTOR. Sa calèche rouge devant. Venez vous êtes tous les bienvenus. Eshu seras ravie de vous accueillir."
+        },
+        {
+          "tavern_id": 87932,
+          "tavern_name": "Le puit sans fond",
+          "description": "☘ Les plus gros buveurs de bière - St Patrick 1474 ☘ 1 - Getsumi - 72700 bières 2 - Regglys - 71372 bières 3 - Lothaire. - 35712 bières ======== ☘ CONCOURS : J'offre la recette du jour à celui qui finira le puit ! Plusieurs milliers d'écus a gagner. ☘ Dépêche de la KAP: http://www.degloriaregni.com/KAP/index.php?id_depeche=114744"
+        },
+        {
+          "tavern_id": 87806,
+          "tavern_name": "My tavern",
+          "description": ""
+        },
+        {
+          "tavern_id": 87373,
+          "tavern_name": "💕Flamboyante",
+          "description": "✨.•*¨*.¸.•*¨*.¸¸.•*¨`*• ƸӜƷ 🌸🌺🌸🌺🌸🌺🌸🌺 Sprinkled with love❤ 🌷🌻🌷🌻🌷🌻🌷🌻 ¨*.¸.•*¨`*. ¸.•*¨*.¸¸.•*¨`*•.✨ 🌹🍀🌹🍀🌹🍀🌹🍀 Bienvenue à tous et à toutes. Buvons...Trinquons."
+        },
+        {
+          "tavern_id": 86931,
+          "tavern_name": "La Cambuse",
+          "description": "Petite taverne située en plein coeur de la ville dans laquelle se regroupent les marins des environs et leurs affidés. ⚓ Idéale pour étancher votre soif, il faudra chercher ailleurs pour la pitance. 🪼 🦐 🐠 En tendant l'oreille vous y entendrez des histoires de kraken, de disette, de canons énooormes et de radeaux de fortune mais également des bribes de projets de spectacle son et lumière en tous genres.💣💥 Amateurs de palourdes et de bigorneaux sont les bienvenus. 🐚"
+        },
+        {
+          "tavern_id": 86669,
+          "tavern_name": "Annexe Maison des soupirs",
+          "description": ""
+        },
+        {
+          "tavern_id": 86625,
+          "tavern_name": "au bleu océan",
+          "description": "Le bleu océan offre à ses visiteurs affamés et assoiffés de quoi faire bombance et ripaille dans une atmosphère des plus festives. Voyagez dans le temps et revivez quelques légendes oubliées dans un décor chaleureux et pittoresque...bon y fait froid mais shuttt faut pas le dire! Sirius Black. Conteur et menteur professionnel. Depuis 1201 , il a traîné ses contes et ses menteries à travers les villes et villages. Doté d'une répartie déconcertante, il saura vous charmer avec son approche unique: un savant mélange d'histoire et d'humour...mouais.m'enfin pour ceux qui réussissent a garder les yeux ouverts!"
+        },
+        {
+          "tavern_id": 85354,
+          "tavern_name": "Comptoir de la Ruine",
+          "description": "Bordant modeste entrepôts sur le port, le Comptoir s'ouvre sur les quais. Même si les étals ne sont que peu achalandés, quelque marchand est toujours la pour vous faire liste des inventaires des marchandises mise en vente par les caravanes de la Ruine. Et en l'attente d'une réponse à quelque éventuelle requête, il y a toujours en perce un fût de Nonne aux Pieds Nus, brassée non loin entre les murs de St Illinda."
+        },
+        {
+          "tavern_id": 83914,
+          "tavern_name": "Le repère Corleone",
+          "description": "Dans une cave bordelaise délaissée, les Corleone ont posé leurs quartiers. À quelques rues de la Garonne, derrière une échoppe bordelaise se trouve l'antre des Corleone à Bordeaux. Quelques tonneaux, par-ci, par-là, des tables et des chaises en pin landais, il n'existe aucune ouverture dans cette cave. Enfin, pas selon vos observations."
+        },
+        {
+          "tavern_id": 82909,
+          "tavern_name": "Taverne Ordo Gladii Aureli",
+          "description": "Taverne Ordo Gladii Aureli. Bienvenue au cœur chaleureux de l'ordre chevaleresque Ordo Gladii Aurei! Ici se croisent récits de bravoure, d'honneur et de fraternité. La taverne de l'Épée d'Or est l'endroit où chevaliers, écuyers et voyageurs de bonne volonté viennent reposer leur âme et leur corps, célébrer les victoires et savourer l'hydromel maison. Sous l'œil vigilant de l'ordre, règnent ici respect, ordre et parole chevaleresque. Que vous soyez invité, ami de l'ordre, ou simplement en quête d'un refuge et d'une bonne histoire — nos portes vous sont grandes ouvertes. Que la lumière de l'Épée d'Or éclaire votre chemin!"
+        },
+        {
+          "tavern_id": 80764,
+          "tavern_name": "Rp delocalisé",
+          "description": ""
+        },
+        {
+          "tavern_id": 80720,
+          "tavern_name": "Ma taverne",
+          "description": ""
+        },
+        {
+          "tavern_id": 80630,
+          "tavern_name": "L élégant",
+          "description": "Situé au cœur de la ville non loin du port, L élégant accueille habitants et voyageur dans un cadre digne de son nom. Vous pourrez y trouver des plats raffinés et exotiques, des boissons de tous les horizons et pour toutes les bourses, sauf la pisse d'âne en fût qui est banni des lieux pour d'élégantes raisons. A votre entré vous ne pourrez rater l'immense comptoir qui cache à peine les multiples spiritueux qui s'offrent à vous, de la tisane aussi pour les plus téméraires. Au fond un escalier qui donne sur une coursive dont l'accès est restreint, pour y accéder il vous faudra en faire la demande au propriétaire faute de quoi Gaston vous mettra un coup de pied au ... La coursive dessert les chambres pour ceux qui souhaitent passer la nuit au sein de l'établissement. Ceux qui ont trop bu seront élégamment hébergé sur des carpettes près de la porte. La salle peut être privatisé sur demande."
+        },
+        {
+          "tavern_id": 79492,
+          "tavern_name": "Exterminateur de fûts XV",
+          "description": "Bienvenue à l'exterminateur de fûts !"
+        },
+        {
+          "tavern_id": 77929,
+          "tavern_name": "Chez Belle à Bordeaux ",
+          "description": "Ici dans má taverne , il y a toujours de la bière fraîche! Bière. 0,79 écus"
+        },
+        {
+          "tavern_id": 75511,
+          "tavern_name": "La Planque",
+          "description": "Les tables sont désormais stables. L'une, plus petite, est dans un coin renfoncé pour promettre intimité, l'autre est en plein milieu de la salle principale, plus conséquente. Les huit chaises sont disposées à la va-vite, l'une d'entre elle a été délestée d'un pied. L'âtre est très souvent ronronnant, sauf quand les propriétaires sont absents de la ville. Devant lui, trônent quatre fauteuils de bonne fortune, un rouge, un bleu, un vert et un jaune sur lesquels le dossier a été brodé de quatre prénoms dans l'ordre, Amicie, Rodrigue, Jhoannes, Salomé."
+        },
+        {
+          "tavern_id": 73889,
+          "tavern_name": "— ∘༉♡∘ — ൱𝒾𝓁𝓁𝑒 &amp; ᙀ𝓃𝑒 Ꚃ𝑜𝓊𝓀𝓎 — ∘༉♡∘ —",
+          "description": "¯`v´¯) ദ𝒾𝑒𝓃𝑒𝓃𝓊𝑒 𝒶𝓊𝓍 ൱𝒾𝓁𝓁𝑒 &amp; ᙀ𝓃𝑒 Ꚃ𝑜𝓊𝓀𝓎 `*.¸.*´ ? ¸.•´¸.•*¨) ¸.•*¨)? (¸.•´ (¸.•´ .•´ ¸¸.•¨¯`•. (¯`v´¯) .`·.¸.·´ ? ¸.·´¸.·´¨) ¸.·*¨) (¸.·´ (¸.·´ .·´ ¸ ( En construction )"
+        },
+        {
+          "tavern_id": 73458,
+          "tavern_name": "Death Zone Bordeaux",
+          "description": "🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩 Run or die 🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩🇹🇩"
+        },
+        {
+          "tavern_id": 72357,
+          "tavern_name": "[RP Délocalisé]",
+          "description": ""
+        },
+        {
+          "tavern_id": 68422,
+          "tavern_name": "𝐎𝐜𝐮𝐥𝐮𝐬 𝐏𝐞𝐫𝐟𝐨𝐫𝐮𝐦",
+          "description": "Sur la plage de Bordeaux, sous une tente aux allures de palais des mille et une nuits siège le refuge bordelais des d'Arpaon. Coussins bigarrés et tapis richement décorés rivalisent d'éclat avec les tentures chatoyantes. Un parfum de myrrhe et de benjoin se mélange subtilement à l'air marin et et dans cet océan de tissus dépareillé trône en son centre une tablette de bois pourvue de tout l'attirail de la parfaite voyante."
+        },
+        {
+          "tavern_id": 67678,
+          "tavern_name": "Ma belle Taverne",
+          "description": ""
+        },
+        {
+          "tavern_id": 65630,
+          "tavern_name": "Sept au Bord'l'eau ",
+          "description": "Vous voici dans la taverne de l'Armée des Septs ! L'armée indépendante la plus réputée de la région, présente sur les eaux et sur la terre. Des combattants de toutes les provinces réunis avec un objectif commun : protéger le peuple. Des combattants expérimentés qui savent ce que combat signifie. A son actif de nombreux combats et victoires , des missions d'escorte. L'essayer c'est l'adopter ! Venez nous visiter dans notre forteresse : https://lessepts.1fr1.net/ https://zupimages.net/up/20/48/pqt8.png"
+        },
+        {
+          "tavern_id": 65522,
+          "tavern_name": "L'Ange Blond ...",
+          "description": "Bienvenue a la La Taverne l' Ange Blond. L 'Ange blond pour ceux qui ne savent pas c'est ma Puce Eneka ... La Taverne ne regorge pas de Nourritures, Le Cuisinier cherche sur les marchés ... 1/ Un verre de bienvenue sera offert a chaque nouvelle Tète, voyageurs ou autres... 2/ Nous sommes intéressé par tout produits, contactez Dame Eneka. ou moi même... 3/ Si vous cherchez des articles, il est possible que nous l'ayons en stock... Armes, Haches, Boucliers, Philtres, Potions ... Et Plus si affinités 4/ Trocs Possible aussi... 5/ Nous achetons du Mais pour notre cuisine , Contacter Dame Eneka. ou moi même... BIÈRES: Brune... Aussi bonne que la Blonde et la Rousse... 0.80 Écus. Blonde... Aussi bonne que la Brune et la Rousse ...0.80 Écus. Rousse... Aussi bonne que la Brune et la Blonde... a 0.80 Écus. Le prix c'est pour les bières, pas pour nos Dames... Venez vous abreuver, les Fûts sont pleins... Fermez la porte en sortant..."
+        },
+        {
+          "tavern_id": 65403,
+          "tavern_name": "TDC — La Taverne qui porte bien son nom.",
+          "description": "####################### ------------ 𝑻𝑶𝑼𝑻 𝑫𝑼 𝑪𝑹𝑼 ------------ --------- by SaS Sir Anderson ---------- ####################### ___________________ - OSEZ VISITER LES LIEUX - (1) Vous aimez flirter en Haute Société? (2) Vous sentez bon et en êtes fier? (3) Vos pets flairent la rose et vous aimez les vanter auprès de ces dames? (4) Vous appréciez les bonnes choses et, plus que tout, vous aimez dépenser pour étaler vos nombreuses richesses à la vue de tous? Bref, vous êtes peut-être : (a) une personne d'la Haute, et c'est tant mieux. (b) un petit bourgeois qui tente l'ascension sociale par l'exploitation du pauvre maraud du coin. C'est moins chic, mais nous éviterons de le mentionner. Dans tous les cas, vous avez ouvert la bonne porte : Le Tout du Cru (TDC, RPZ) est fait pour vous et vous correspond bien. Ici, on ne boit pas de la chopinette comme tout le monde, nan... Si on en boit, c'est d'la vieillie en chên..."
+        },
+        {
+          "tavern_id": 46819,
+          "tavern_name": "Le Poison Cyclonique !",
+          "description": "Nichée dans la campagne bordelaise, la bicoque, aux allures ordinaires, ne draine pas l'intérêt spontané du quidam… au dessus de la porte, une enseigne se balance au gré du vent. L'auberge vous accueille d'un mobilier classique mais non moins confortable… les tentures aux couleurs harmonieuses garantissent d'une atmosphère chaleureuse, quand les senteurs subtiles des plantes se mêlent aux effluves d'une pipe ou d'une braisière. Fioles, bouteilles ou tonnelets promettent les voyages exotiques ou, peut-être, ésotériques. A l'étage, quelques piaules à la décoration succincte mais, la literie est douillette, le linge est propre. 1/ Le Moussaillon pour les petites fringales (2pts de faim) 2/ Le Navigateur pour les gros appétits (3pts de faim)"
+        }
+      ]
+    }
   ]
 }

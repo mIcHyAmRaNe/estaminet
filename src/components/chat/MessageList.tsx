@@ -87,6 +87,17 @@ export default function MessageList({ messages, listRef, onScroll, players }: Pr
             );
           }
 
+          // Portrait fallback notice: yellow warning line (toast companion).
+          if (msg.type === "warning") {
+            return (
+              <div key={msg.id} class="room-message warning">
+                <div class="room-msg-content" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Alert size={14} /> <LinkifiedText text={msg.content} players={players} playersKey={playersKey} skipLogin={msg.login} />
+                </div>
+              </div>
+            );
+          }
+
           // Lane F1 — social/economy lines (drink offer / self drink, ordered
           // menu, general round) with their official mini icons.
           if (msg.type === "drink" || msg.type === "meal" || msg.type === "tournee") {

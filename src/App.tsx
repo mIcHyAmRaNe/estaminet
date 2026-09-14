@@ -217,13 +217,16 @@ export default function App() {
   };
 
   // Room — Leave: cut the socket only (session stays open), back to taverns.
+  // The portrait cache is KEPT across re-entries: entries are keyed by
+  // login and self-invalidated by JSON comparison on the next fetch, so a
+  // re-enter reuses portraits (the backend fresh-first fetch still picks up
+  // outfit changes server-side).
   const handleLeaveRoom = async () => {
     try {
       await api.wsDisconnect();
     } catch {
       // Socket already down — return to taverns anyway.
     }
-    clearPortraitCache();
     clearRoomState();
     taverne.setStatus(t("status.sessionOpen", { username }));
     setPhase("tavern");
@@ -371,6 +374,7 @@ export default function App() {
         banned={taverne.banned}
         needsRefresh={taverne.needsRefresh}
         floodMuted={taverne.floodMuted}
+        portraitWarning={taverne.portraitWarning}
         onKickPlayer={taverne.kickPlayer}
         onBanPlayer={taverne.banPlayer}
         onUnbanPlayer={taverne.unbanPlayer}

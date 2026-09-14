@@ -55,6 +55,9 @@ const WHISPER_DEDUP_MS = 10000;
 const RECONNECT_MAX_ATTEMPTS = 5;
 const RECONNECT_MAX_DELAY_MS = 10000;
 const ECUS_PULSE_MS = 2500; // matches the official ecus_moins flash duration
+// Portrait fallback toast TTL (~6s, latest-wins): mirrors the floating
+// auth-status toasts, one notch longer so the warning registers.
+const PORTRAIT_WARN_TTL_MS = 6000;
 
 // Lane F1 — numeric payload field (server sometimes sends numbers as strings).
 function numField(v: unknown): number | null {
@@ -336,6 +339,13 @@ export function useTaverne(username: string, idLieu: number) {
   // Lane F3 — flood mute (taverneBanFlood): chat input disabled ~30s.
   const [floodMuted, setFloodMuted] = useState(false);
   const floodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Portrait fallback notice (Rust `portrait-warning` event on ws_connect
+  // when the Zoom fetch fails): yellow floating toast (latest-wins, ~6s)
+  // + one yellow chat line per fallback source per tavern. Never set on
+  // fresh success — the backend emits nothing then.
+  const [portraitWarning, setPortraitWarning] = useState<string | null>(null);
+  const portraitToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const portraitWarnedRef = useRef<Set<string>>(new Set());
   const ecusRef = useRef<number | null>(null);
   const ecusPulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -368,6 +378,12 @@ export function useTaverne(username: string, idLieu: number) {
   const clearTournee = () => setTournee(null);
 
   const clearSocialState = () => {
+    setPortraitWarning(null);
+    if (portraitToastTimer.current) {
+      clearTimeout(portraitToastTimer.current);
+      portraitToastTimer.current = null;
+    }
+    portraitWarnedRef.current.clear();
     setMenus({ plats: [], boissonPrix: null });
     setEcus(null);
     ecusRef.current = null;
@@ -1237,10 +1253,40 @@ export function useTaverne(username: string, idLieu: number) {
       }
     }).then((u) => trackUnlisten(u));
 
+    // Portrait fallback (backend `portrait-warning` on ws_connect, payload
+    // "cached" | "default"): toast is latest-wins (~6s TTL), the chat line
+    // fires once per source per tavern (reconnect bursts refresh the toast
+    // without duplicating the line). Local-only notice, not saved to the log.
+    listen<string>("portrait-warning", (e) => {
+      if (disposed) return;
+      const source = e.payload === "default" ? "default" : "cached";
+      const text = t(source === "default" ? "portrait.warnDefault" : "portrait.warnCached");
+      if (portraitToastTimer.current) clearTimeout(portraitToastTimer.current);
+      setPortraitWarning(text);
+      portraitToastTimer.current = setTimeout(() => {
+        setPortraitWarning(null);
+        portraitToastTimer.current = null;
+      }, PORTRAIT_WARN_TTL_MS);
+      if (portraitWarnedRef.current.has(source)) return;
+      portraitWarnedRef.current.add(source);
+      const warn: ChatMessage = {
+        id: crypto.randomUUID(),
+        type: "warning",
+        content: text,
+        timestamp: new Date().toLocaleTimeString(),
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev.slice(-MSG_HISTORY_LIMIT), warn]);
+    }).then((u) => trackUnlisten(u));
+
     return () => {
       disposed = true;
       stopAutoSeat();
       clearReconnectTimer();
+      if (portraitToastTimer.current) {
+        clearTimeout(portraitToastTimer.current);
+        portraitToastTimer.current = null;
+      }
       for (const u of unsubs) {
         try { u(); } catch {}
       }
@@ -1348,5 +1394,7 @@ export function useTaverne(username: string, idLieu: number) {
     // Lane F3 — consent, fatal flags, flood mute, moderation.
     accepteAlcool, needsRefresh, floodMuted,
     toggleAccepteAlcool, kickPlayer, banPlayer, unbanPlayer,
+    // Portrait fallback notice (toast text; null when none).
+    portraitWarning,
   };
 }

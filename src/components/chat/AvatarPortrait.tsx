@@ -88,7 +88,7 @@ function buildPortraitImg(dataUrl: string, sexe: string): HTMLDivElement {
   return racine;
 }
 
-export default function AvatarPortrait({ login }: { login: string }) {
+export default function AvatarPortrait({ login, own }: { login: string; own?: boolean }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -124,14 +124,17 @@ export default function AvatarPortrait({ login }: { login: string }) {
 
     // 2) Fresh JSON (fetch + bounded retry 1 + 2, as before): if the JSON
     // changed since the cache, offscreen re-render → dataURL → cache → <img>.
+    // Self-view (`own`) reads the exact changeSalon JSON via
+    // get_own_portrait_json — what others see is what you see ("" while the
+    // backend never fetched: the fallback letter stays).
     const FETCH_MAX_ATTEMPTS = 3;
     const FETCH_RETRY_DELAYS_MS = [1500, 3000];
     let attempt = 0;
     const tryFetch = () => {
       if (stale) return;
       attempt += 1;
-      api
-        .getPortraitJson(login)
+      const fetchJson = own ? api.getOwnPortraitJson() : api.getPortraitJson(login);
+      fetchJson
         .then((jsonStr: string) => {
           if (stale || !jsonStr) return;
           if (portraitCache.get(lower)?.json === jsonStr) return; // already shown
