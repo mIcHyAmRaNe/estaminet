@@ -967,7 +967,7 @@
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
 }
 
-   pattern). This later rule supersedes the base roomFadeIn entrance: only
+/* Character-card entrance stagger (per-place delay pattern). This later rule supersedes the base roomFadeIn entrance: only
    `from` declares a transform so the natural per-place translateX(-50%)
    (and the clickable hover scale) still apply after the entrance — fill is
    `backwards`, never `forwards`. MenuPopup / TourneeOverlay already fade in
