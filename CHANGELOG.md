@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [0.5.9] - 2026-09-15
+
+### Added
+- `taverns.json` `places` override (default 8, max 10): backend parses
+  optional `places`, frontend falls back to `DEFAULT_PLACES` when unset.
+- Tavern auto-expands to 10 seats when occupancy at idx 8/9 is detected
+  (ChangePlace / connectMe / connect / taverneInit); sticky, no shrink
+  while seats 8/9 are occupied.
+
+### Fixed
+- Seats 8/9 were merged into `places[]` but never rendered (`totalPlaces`
+  stayed 8, occupant invisible and not standing).
+- Place index bound `< 20` → `< 10` (`PlaceId` 0..9 / Rust `PLACE_MAX` 9).
+- `Tavern.places` nullable (backend serializes `None` as null).
+- `place.invalid` message interpolates `{total}` instead of hardcoded 8.
+
 ## [0.5.8] - 2026-09-14
 
 ### Removed

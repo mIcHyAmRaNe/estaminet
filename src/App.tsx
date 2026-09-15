@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "preact/hooks";
 import { api } from "./api/tauri";
 import { t } from "./lib/i18n";
-import { DEFAULT_TAVERN_ID, DEFAULT_PLACES, CHAT_SLASH_ALLOWLIST } from "./lib/config";
+import { DEFAULT_TAVERN_ID, DEFAULT_PLACES, MAX_PLACES, CHAT_SLASH_ALLOWLIST } from "./lib/config";
 import { useTaverne } from "./lib/hooks/useTaverne";
 import { useBredouille } from "./lib/hooks/useBredouille";
 import { useRecents } from "./lib/hooks/useRecents";
@@ -36,6 +36,9 @@ export default function App() {
   const tavernPlaces = taverns.find((t) => t.id === idLieu)?.places ?? DEFAULT_PLACES;
   const taverne = useTaverne(username, idLieu, tavernPlaces);
   useEffect(() => {
+    // Sticky 10: do not shrink back to 8 while seats 8/9 are occupied —
+    // the hook already auto-expanded on occupancy (see expandForPlace).
+    if (taverne.totalPlaces === MAX_PLACES && tavernPlaces === DEFAULT_PLACES && (taverne.places[8] != null || taverne.places[9] != null)) return;
     taverne.setTotalPlaces(tavernPlaces);
     taverne.setPlaces(Array(tavernPlaces).fill(null));
     // Sync on tavern selection / list load (setters are stable).

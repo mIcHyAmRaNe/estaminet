@@ -12,6 +12,8 @@ export const MSG_HISTORY_LIMIT = 200; // keep last N in memory
 // Places
 export const PLACE_RESERVED_DEFAULT = [0] as const;
 export const DEFAULT_PLACES = 8 as const;
+// 8 by default, 10 when taverns.json sets places:10 or occupancy is detected at 8/9.
+export const MAX_PLACES = 10 as const;
 
 // Auto-seat
 export const AUTO_QUIET_MS = 600;
@@ -28,7 +30,7 @@ export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
 // App version fallback for the About dialog (runtime source of truth is
 // getVersion() from @tauri-apps/api/app; keep in sync with package.json).
-export const APP_VERSION = "0.5.0";
+export const APP_VERSION = "0.5.9";
 
 // Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";

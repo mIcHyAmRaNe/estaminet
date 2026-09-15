@@ -117,7 +117,7 @@ export const fr: Record<string, string> = {
   'place.reservedDenied': 'Place réservée — accès refusé',
   'place.taken': 'Place déjà prise',
   'place.full': 'Taverne complète — aucune place simple libre.',
-  'place.invalid': 'Place {place} inexistante — taverne à 8 places',
+  'place.invalid': 'Place {place} inexistante — taverne à {total} places',
   'error.generic': 'Erreur : {err}',
   'error.sendFailed': 'Échec : {err}',
   'bredouille.title': '— bredouille —',

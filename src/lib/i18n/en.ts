@@ -117,7 +117,7 @@ export const en: Record<string, string> = {
   'place.reservedDenied': 'Reserved seat — access denied',
   'place.taken': 'Seat already taken',
   'place.full': 'Tavern full — no free common seats.',
-  'place.invalid': 'Seat {place} does not exist — 8-seat tavern',
+  'place.invalid': 'Seat {place} does not exist — {total}-seat tavern',
   'error.generic': 'Error: {err}',
   'error.sendFailed': 'Failed: {err}',
   'bredouille.title': '— bredouille —',

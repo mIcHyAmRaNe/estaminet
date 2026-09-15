@@ -3,7 +3,7 @@ export interface Tavern {
   name: string;
   ville: string;
   description: string;
-  places?: number;
+  places?: number | null;
 }
 
 export type MessageType = "normal" | "emote" | "whisper" | "system" | "error" | "warning" | "drink" | "meal" | "tournee";

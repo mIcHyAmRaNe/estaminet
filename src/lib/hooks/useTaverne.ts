@@ -15,6 +15,7 @@ import {
   WS_RECONNECT_DELAY_MS,
   WS_CLOSE_VOLUNTARY,
   DEFAULT_PLACES,
+  MAX_PLACES,
   WHISPER_DEDUP_MS,
   RECONNECT_MAX_ATTEMPTS,
   RECONNECT_MAX_DELAY_MS,
@@ -64,10 +65,10 @@ function mergePlacements(prev: (string | null)[], placements: Placement[], opts:
 
 function extractPlaceIndex(o: Record<string, unknown>): number | null {  const candidates = [o.place, o.idPlace, o.position];
   for (const c of candidates) {
-    if (typeof c === "number" && Number.isInteger(c) && c >= 0 && c < 20) return c;
+    if (typeof c === "number" && Number.isInteger(c) && c >= 0 && c < 10) return c;
     if (typeof c === "string" && c.trim() !== "") {
       const n = Number(c.trim());
-      if (Number.isInteger(n) && n >= 0 && n < 20) return n;
+      if (Number.isInteger(n) && n >= 0 && n < 10) return n;
     }
   }
   return null;
@@ -241,6 +242,24 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
     placesRef.current = places;
   }, [places]);
 
+  // Sticky auto-expand: whenever a placement at idx 8 or 9 is seen, the
+  // tavern really has MAX_PLACES seats — bump totalPlaces (drives ChatRoom
+  // TOTAL_SEATS) and pad places[] so seats 8/9 render instead of staying
+  // invisible. Sticky: never shrinks back (see the [tavernPlaces] guard).
+  // Ref-based + stable setters only, safe to call from the socket handler.
+  const expandForPlace = (idx: number) => {
+    if ((idx === 8 || idx === 9) && totalPlacesRef.current < MAX_PLACES) {
+      totalPlacesRef.current = MAX_PLACES;
+      setTotalPlaces(MAX_PLACES);
+      setPlaces((prev) => {
+        if (prev.length >= MAX_PLACES) return prev;
+        const n = [...prev];
+        while (n.length < MAX_PLACES) n.push(null);
+        return n;
+      });
+    }
+  };
+
   useEffect(() => {
     // Tavern change: explicit clear (42[...] frames carry no tavern ID)
     // + arming the race guard until the next ws-connected of the new tavern.
@@ -266,8 +285,16 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
 
   useEffect(() => {
     const n = tavernPlaces ?? DEFAULT_PLACES;
-    setTotalPlaces(n);
-    setPlaces(Array(n).fill(null));
+    // Sticky 10: a late tavern-list sync must not shrink 10→8 while seats
+    // 8/9 are occupied (or already expanded) — that would hide occupants.
+    // The [idLieu] reset above stays authoritative on tavern switch.
+    const keepTen =
+      placesRef.current[8] != null ||
+      placesRef.current[9] != null ||
+      totalPlacesRef.current === MAX_PLACES;
+    const next = keepTen ? Math.max(n, MAX_PLACES) : n;
+    setTotalPlaces(next);
+    setPlaces(Array(next).fill(null));
   }, [tavernPlaces]);
 
   const addPresent = (login: string) => {
@@ -480,6 +507,7 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
             id = data[2] as number;
           }
           if (id !== null) {
+            expandForPlace(id);
             if (plogin === null) {
               setPlaces((prev) => {
                 const n = [...prev];
@@ -641,6 +669,7 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
             presentKeysRef.current = new Set(seen.keys());
             setTypingUsers([]);
             if (placements.length > 0) {
+              if (placements.some((p) => p.idx === 8 || p.idx === 9)) expandForPlace(8);
               setPlaces((prev) => mergePlacements(prev, placements, { move: false }));
             }
           } else if (sub === "connect" && data.length >= 3) {
@@ -688,6 +717,7 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
               }
             }
             if (placements.length > 0) {
+              if (placements.some((p) => p.idx === 8 || p.idx === 9)) expandForPlace(8);
               setPlaces((prev) => mergePlacements(prev, placements, { move: true }));
             }
           }
@@ -761,6 +791,7 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
             }
           }
           if (placements.length > 0) {
+            if (placements.some((p) => p.idx === 8 || p.idx === 9)) expandForPlace(8);
             setPlaces((prev) => mergePlacements(prev, placements, { move: false }));
           }
           return;
@@ -1137,7 +1168,7 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
       const attempted = lastPlaceRef.current;
       const total = totalPlacesRef.current;
       if (attempted !== null && attempted >= total) {
-        setError(t("place.invalid", { place: attempted }));
+        setError(t("place.invalid", { place: attempted, total }));
         setSelectedPlace(null);
         setLastPlaceAttempt(null);
         lastPlaceRef.current = null;
