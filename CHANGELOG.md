@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## [0.5.8] - 2026-09-14
 
 ### Removed
@@ -46,9 +48,7 @@
 - `changeSalon` payload now matches the official browser exactly:
   portrait `login` normalized to session login (display-case drift fixed),
   `equipement` filtered to worn items (`miniature == "o"`), and raw send
-  logged to the tavern file for byte-level verification.
-
-## Unreleased
+   logged to the tavern file for byte-level verification.
 
 ## [0.5.5] - 2026-09-13
 
