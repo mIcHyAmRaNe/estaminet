@@ -30,7 +30,7 @@ export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
 // App version fallback for the About dialog (runtime source of truth is
 // getVersion() from @tauri-apps/api/app; keep in sync with package.json).
-export const APP_VERSION = "0.6.1";
+export const APP_VERSION = "0.6.2";
 
 // Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.2] - 2026-09-24
+
+### Fixed
+- House chat (`maison`): self-presence on empty `connectMe` (user missing from initial roster); typing animation via `taverneDebuteMessage`/`AnnuleMessage` handled on shared socket; `typingUsers` state wired to hook return; `currentUser` used correctly for sound gating.
+- `/me` rendered as plain `normal` message (no blue emote styling) — `maisonMsgType` maps `parler`/`crier` → `"normal"`.
+
 ## [0.6.1] - 2026-09-24
 
 ### Added

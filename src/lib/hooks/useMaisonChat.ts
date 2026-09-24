@@ -116,6 +116,7 @@ export function useMaisonChat({ enabled, maisonId, suspended = false, currentUse
   const [isConnected, setIsConnected] = useState(false);
   // Distinct maison error state (never tavern copy — see `maison.*` keys).
   const [maisonError, setMaisonError] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [maisonErrorKind, setMaisonErrorKind] = useState<MaisonErrorKind | null>(null);
   // Manual-retry trigger: bumping it re-runs the gated dial effect below,
   // reusing the exact dial path (generation bump + outfit fetch +
@@ -338,12 +339,19 @@ export function useMaisonChat({ enabled, maisonId, suspended = false, currentUse
         const eventName = data[0] as string;
 
         if (eventName === "maisonInit") {
-          // Room-init evidence (exempt from the pending-ack guard — see
-          // pendingGenRef docs). Clears a watchdog error that fired early
-          // on a slow roster; the roster watchdog itself keeps running.
           gotInitRef.current = true;
           setMaisonError(null);
           setMaisonErrorKind(null);
+          // Self always present: add to roster mirror (empty connectMe excludes it).
+          const selfLogin = currentUserRef.current.trim();
+          if (selfLogin && isValidLogin(selfLogin)) {
+            const sk = loginKey(selfLogin);
+            presentKeysRef.current.add(sk);
+            setOnlineUsers((prev) => {
+              if (prev.some((u) => u.toLowerCase() === sk)) return prev;
+              return [...prev, displayLogin(selfLogin)];
+            });
+          }
           return;
         }
 
@@ -458,6 +466,28 @@ export function useMaisonChat({ enabled, maisonId, suspended = false, currentUse
           pushMessage(login, data[5], data[6]);
           return;
         }
+        // Official client delegates typing through ville chat: taverneDebuteMessage
+        // / AnnuleMessage arrive on the shared bus even in a maison room.
+        if (eventName === "taverneDebuteMessage") {
+          const rawLogin = data[1];
+          if (typeof rawLogin === "string" && isValidLogin(rawLogin.trim())) {
+            const key = loginKey(rawLogin.trim());
+            const selfKey = loginKey(currentUserRef.current.trim());
+            if (selfKey && key !== selfKey) {
+              setTypingUsers((prev) => (prev.includes(key) ? prev : [...prev, key]));
+            }
+          }
+          return;
+        }
+        if (eventName === "taverneAnnuleMessage") {
+          const rawLogin = data[1];
+          if (typeof rawLogin === "string") {
+            const key = loginKey(rawLogin.trim());
+            setTypingUsers((prev) => prev.filter((k) => k !== key));
+          }
+          return;
+        }
+
         // Everything else (ville/taverne frames, bare connect/disconnect):
         // not ours.
         return;
@@ -546,5 +576,6 @@ export function useMaisonChat({ enabled, maisonId, suspended = false, currentUse
     maisonErrorKind,
     retryMaison,
     sendMaison,
+    typingUsers,
   };
 }
