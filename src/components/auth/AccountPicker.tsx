@@ -3,15 +3,16 @@ import { displayLogin } from "../../lib/utils/login-utils";
 import { t } from "../../lib/i18n";
 import type { AccountPickerProps } from "../../lib/types";
 
-// Saved accounts: radio list, preselect-then-Connect.
+// Saved accounts: chalk-row list, preselect-then-Connect. The picked row is
+// signalled by the gold underline alone (no radio dot, no card border).
 // The Connect button lives in AuthStep; here: selection + remove + toggle.
 export default function AccountPicker(props: AccountPickerProps) {
   if (props.accounts.length === 0) return null;
 
   return (
     <div class="account-picker">
-      <p class="account-picker-label">{t("auth.selectAccount")}</p>
-      <div class="account-list" role="radiogroup" aria-label={t("auth.accounts")}>
+      <p class="account-picker-label" id="saved-accounts-label">{t("auth.selectAccount")}</p>
+      <div class="account-list" role="radiogroup" aria-labelledby="saved-accounts-label">
         {props.accounts.map((login) => {
           const checked = props.pickedAccount === login;
           const initial = displayLogin(login).charAt(0) || "?";
@@ -30,19 +31,10 @@ export default function AccountPicker(props: AccountPickerProps) {
               aria-checked={checked}
               tabIndex={0}
             >
-              <input
-                type="radio"
-                class="account-radio"
-                name="saved-account"
-                checked={checked}
-                onChange={() => props.onPick(login)}
-                tabIndex={-1}
-                aria-hidden="true"
-              />
               <span class="remembered-avatar" aria-hidden="true">
                 {initial}
               </span>
-              <span class="account-name">{login}</span>
+              <span class="account-name">{displayLogin(login)}</span>
               <button
                 type="button"
                 class="btn-icon account-remove"
@@ -62,7 +54,7 @@ export default function AccountPicker(props: AccountPickerProps) {
       </div>
       <button
         type="button"
-        class="btn-secondary"
+        class="tavern-quiet account-use-another"
         onClick={props.onUseAnother}
         disabled={props.loading}
       >

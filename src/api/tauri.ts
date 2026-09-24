@@ -27,6 +27,23 @@ export const api = {
 
   wsConnect: (idLieu: number) => invoke<void>("ws_connect", { idLieu }),
 
+  // Village presence (tavern-picker phase only): reuses the single socket.
+  // Backend counterpart: village_connect in src-tauri/src/lib.rs.
+  // `vetements` is the per-user outfit object for changeSalon (omitted →
+  // backend sends `{}`); live sends the full object per user.
+  villageConnect: (idVillage: number, vetements?: unknown) =>
+    invoke<void>("village_connect", { idVillage, vetements }),
+
+  // Player home village (NomVillage, e.g. Montpellier) for home-only
+  // presence dial. Backend in progress — callers treat rejection as
+  // unknown (band hidden until the name maps to a known IDLieu).
+  getPlayerVillage: () => invoke<string | null>("get_player_village"),
+
+  // Per-user outfit object for village preview dials (same client session).
+  // Backend in progress — callers tolerate rejection (missing command) and
+  // fall back to undefined (backend sends `{}`).
+  getPlayerVetements: () => invoke<unknown | null>("get_player_vetements"),
+
   wsSend: (message: string) => invoke<void>("ws_send", { message }),
 
   typingStart: () => invoke<void>("ws_typing_start"),

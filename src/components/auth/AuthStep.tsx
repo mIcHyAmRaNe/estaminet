@@ -18,9 +18,9 @@ export default function AuthStep(props: AuthStepProps) {
   const { showStatus, toastLeaving } = useStatusToast(props.status, props.error);
 
   return (
-    <div class="auth-container">
+    <>
       <form
-        class="auth-form"
+        class="auth-form auth-form--auth"
         onSubmit={(e: Event) => {
           e.preventDefault();
           if (showForm) {
@@ -48,7 +48,7 @@ export default function AuthStep(props: AuthStepProps) {
           </div>
         </div>
 
-        {props.error && <div class="auth-error">{props.error}</div>}
+        {props.error && <div class="auth-error" role="alert">{props.error}</div>}
         {showStatus && (
           <div class={`auth-status${toastLeaving ? " is-leaving" : ""}`}>{props.status}</div>
         )}
@@ -79,7 +79,7 @@ export default function AuthStep(props: AuthStepProps) {
             )}
             <button type="submit" class="btn-primary" disabled={props.loading}>
               {!props.loading && <Person size={16} />}
-              {props.loading ? t("auth.submit") : t("auth.connect")}
+              {props.loading ? t("auth.connecting") : t("auth.connect")}
             </button>
           </>
         ) : (
@@ -98,12 +98,17 @@ export default function AuthStep(props: AuthStepProps) {
               disabled={props.loading || !canConnectSaved}
             >
               {!props.loading && <Person size={16} />}
-              {props.loading ? t("auth.submit") : t("auth.connect")}
+              {props.loading ? t("auth.connecting") : t("auth.connect")}
             </button>
           </>
         )}
+        {props.loading && props.onCancel && (
+          <button type="button" class="btn-secondary" onClick={props.onCancel}>
+            {t("auth.cancel")}
+          </button>
+        )}
       </form>
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
-    </div>
+    </>
   );
 }

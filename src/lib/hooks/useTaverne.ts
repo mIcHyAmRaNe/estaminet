@@ -14,6 +14,8 @@ import {
   MSG_HISTORY_LIMIT,
   WS_RECONNECT_DELAY_MS,
   WS_CLOSE_VOLUNTARY,
+  TAVERN_CONNECTED_MSG,
+  WS_CLOSE_ROOM_REJECTED,
   DEFAULT_PLACES,
   MAX_PLACES,
   WHISPER_DEDUP_MS,
@@ -167,7 +169,44 @@ function mapTaverneError(err: unknown, parametre: unknown, selfDisp: string): st
   }
 }
 
-export function useTaverne(username: string, idLieu: number, tavernPlaces?: number) {
+// Distinct tavern connection error kind (headless — designer-owned retry
+// buttons consume `errorKind` + `retryTavern()`):
+// - "room-rejected": pre-init close (handshake 41, room-rejected payload,
+//   any close before taverneInit) — terminal, manual retry only.
+// - "dropped": post-init drop — the backoff auto-reconnect keeps running
+//   AND a manual retry is offered (same surfacing error text).
+// - null: no tavern connection error.
+// Village roster failures never touch this: they are village errors
+// (`villageError`/`villageErrorKind` in useVillagePresence, `village.*`
+// copy) — a village failure is never labeled as a tavern error.
+export type TavernErrorKind = "room-rejected" | "dropped";
+function isRoomRejectedPayload(payload: string): boolean {
+  if (payload === WS_CLOSE_ROOM_REJECTED) return true;
+  const low = payload.toLowerCase();
+  return (
+    low.includes("room-rejected") ||
+    low.includes("room rejected") ||
+    low.includes("taverne ferm") ||
+    low.includes("tavern closed") ||
+    low.includes("accès refus") ||
+    low.includes("acces refus")
+  );
+}
+
+// Friendly terminal room error (taverne fermée / accès refusé) — i18n
+// `tavern.roomRejected`. Village roster failures never use this key (they
+// use `village.*`, see useVillagePresence).
+function roomRejectedMessage(): string {
+  return t("tavern.roomRejected");
+}
+
+// Post-init drop notice (the backoff auto-reconnect continues underneath;
+// retryTavern() offers the manual path) — i18n `tavern.dropped`.
+function tavernDroppedMessage(): string {
+  return t("tavern.dropped");
+}
+
+export function useTaverne(username: string, idLieu: number, tavernPlaces?: number, isTavernPhase = true) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [presentUsers, setPresentUsers] = useState<string[]>([]);
   const [totalPlaces, setTotalPlaces] = useState(tavernPlaces ?? DEFAULT_PLACES);
@@ -176,6 +215,10 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
   const [lastPlaceAttempt, setLastPlaceAttempt] = useState<number | null>(null);
   const lastPlaceRef = useRef<number | null>(null);
   const [error, setError] = useState("");
+  // Distinct tavern connection error kind — set alongside `error` by the
+  // ws-closed / ws-connected paths below (`room-rejected` = pre-init/41
+  // terminal, `dropped` = post-init). Cleared with the message.
+  const [errorKind, setErrorKind] = useState<TavernErrorKind | null>(null);
   const [status, setStatus] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const reservedRef = useRef<Set<number>>(new Set(PLACE_RESERVED_DEFAULT));
@@ -191,6 +234,15 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
   // Auto-reconnect with backoff, stopped on first success.
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Manual-retry single-flight: double-clicking the retry button must not
+  // open two sockets (backend latest-wins would swallow the duplicate, but
+  // the local reset must run once).
+  const retryInFlightRef = useRef(false);
+  // Room-ready gate: set on the first fresh `taverneInit`, reset per
+  // connection ([idLieu], tavern ws-connected, any ws-closed). The backoff
+  // reconnect runs ONLY for drops after init; pre-init closes (handshake
+  // 41, early server close, room-rejected) are terminal with no retry.
+  const taverneInitSeenRef = useRef(false);
   // Cross-tavern race guard: armed on idLieu change, disarmed on the next
   // ws-connected. While armed, in-flight ws-message events from the old
   // tavern are ignored (the backend sends no tavern ID in 42[...] frames,
@@ -204,6 +256,12 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
   const totalPlacesRef = useRef(totalPlaces);
   const usernameRef = useRef(username);
   const idLieuRef = useRef(idLieu);
+  // Tavern-phase gate: the hook mounts unconditionally (App always renders
+  // it, even in the village picker/preview), but the shared socket fires
+  // ws-connected for villageConnect too. Auto-seat must only arm/fire while
+  // the tavern room owns the session — otherwise a village preview leaks
+  // 42["taverneChangePlace",…]. Mirrored in a ref (single-flight listener).
+  const isTavernPhaseRef = useRef(isTavernPhase);
   // Presence mirror for synchronous "already present" tests inside the
   // single-flight socket handler (state setters batch across events in
   // the same tick, refs don't). Kept in sync inside addPresent /
@@ -225,6 +283,19 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
   useEffect(() => {
     idLieuRef.current = idLieu;
   }, [idLieu]);
+
+  useEffect(() => {
+    isTavernPhaseRef.current = isTavernPhase;
+    // Leaving the room phase must never leave a stale seat attempt armed:
+    // a quiet/max timer scheduled while in-room would otherwise fire during
+    // the village preview and emit taverneChangePlace.
+    if (!isTavernPhase) {
+      autoSeat.current.pending = false;
+      autoSeat.current.attempts = 0;
+      if (autoSeat.current.quietTimer) { clearTimeout(autoSeat.current.quietTimer); autoSeat.current.quietTimer = null; }
+      if (autoSeat.current.maxTimer) { clearTimeout(autoSeat.current.maxTimer); autoSeat.current.maxTimer = null; }
+    }
+  }, [isTavernPhase]);
 
   useEffect(() => {
     isConnectedRef.current = isConnected;
@@ -264,6 +335,12 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
     // Tavern change: explicit clear (42[...] frames carry no tavern ID)
     // + arming the race guard until the next ws-connected of the new tavern.
     awaitingFreshRef.current = true;
+    taverneInitSeenRef.current = false;
+    // Fresh room, fresh error state: a stale terminal/dropped error + kind
+    // from the previous tavern must not linger (the next ws-connected or a
+    // terminal close sets its own).
+    setError("");
+    setErrorKind(null);
     // Fixed size: DEFAULT_PLACES overridable via taverns.json `places`.
     const n = tavernPlaces ?? DEFAULT_PLACES;
     setPlaces(Array(n).fill(null));
@@ -478,6 +555,11 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
       try {
         const data = JSON.parse(raw.substring(2)) as unknown[];
         const eventName = data[0] as string;
+
+        // Village-phase defense: ville frames belong to useVillagePresence,
+        // and bare connect/disconnect while room-less would pollute presence.
+        if (eventName === "villeInfosPersonnages") return;
+        if ((eventName === "connect" || eventName === "disconnect") && !isConnectedRef.current) return;
 
         const lower = eventName.toLowerCase();
         if (lower.includes("place")) {
@@ -794,6 +876,8 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
             if (placements.some((p) => p.idx === 8 || p.idx === 9)) expandForPlace(8);
             setPlaces((prev) => mergePlacements(prev, placements, { move: false }));
           }
+          // Room proven: drops from here on use the backoff reconnect.
+          taverneInitSeenRef.current = true;
           return;
         } else if (eventName === "taverneMessagePrive") {
           // Two forms:
@@ -1110,6 +1194,8 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
 
     function tryAutoSeat() {
       if (disposed || !autoSeat.current.pending || !usernameRef.current) return;
+      // Tavern-phase only: never seat from a village-preview socket.
+      if (!isTavernPhaseRef.current || idLieuRef.current == null) { stopAutoSeat(); return; }
       const selfLower = loginKey(usernameRef.current);
       const cur = placesRef.current;
       if (cur.some((p) => p !== null && p.toLowerCase() === selfLower)) { stopAutoSeat(); return; }
@@ -1129,6 +1215,10 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
 
     function armAutoSeat(quietDelay = AUTO_QUIET_MS) {
       if (!usernameRef.current) return;
+      // Tavern-phase only (see isTavernPhaseRef): arming during a village
+      // preview would leak taverneChangePlace on the shared socket. Return
+      // before setting pending so a later room entry can arm fresh.
+      if (!isTavernPhaseRef.current || idLieuRef.current == null) return;
       // Idempotent: only once per connection. The flag is re-armed on each
       // new ws-connected, never on re-renders.
       if (autoSeat.current.pending) return;
@@ -1154,15 +1244,45 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
       // Voluntary close (teardown_session: Leave button / logout): same
       // cleanup as a drop, but NEVER auto-reconnect — the backend session
       // is destroyed, otherwise 5 NotConnected attempts.
-      // Any other payload = abnormal drop → auto-reconnect armed.
-      const voluntary = e.payload === WS_CLOSE_VOLUNTARY;
+      // Room-rejected (distinct backend payload: taverne fermée / accès
+      // refusé) or any other close BEFORE taverneInit (handshake 41, early
+      // server close): terminal friendly error, NO retry.
+      // Only drops AFTER taverneInit use the backoff reconnect. Old generic
+      // payloads keep working (compat): pre-init they are terminal,
+      // post-init they keep the backoff.
+      const payload = e.payload ?? "";
+      const voluntary = payload === WS_CLOSE_VOLUNTARY;
       const wasConnected = isConnectedRef.current;
+      const hadInit = taverneInitSeenRef.current;
       stopAutoSeat();
       enteredSelfRef.current = false;
+      // Never let a stale reconnect timer fire across a close (quit racing
+      // a village re-dial with a tavern re-dial = two sockets).
+      clearReconnectTimer();
       if (voluntary) {
         setIsConnected(false);
         isConnectedRef.current = false;
+        taverneInitSeenRef.current = false;
+        reconnectAttemptsRef.current = 0;
+        // Next dial must prove fresh: drop stragglers from the torn-down
+        // socket (quit-to-picker) until the next tavern ws-connected.
+        awaitingFreshRef.current = true;
         resetPresence();
+        // Voluntary teardown carries no error and no retry affordance.
+        setErrorKind(null);
+        return;
+      }
+      if (isRoomRejectedPayload(payload) || !hadInit) {
+        // Terminal: no auto-retry, presence reset like a drop (history kept).
+        // The message persists until the next ws-connected / Enter / manual
+        // retryTavern() (no TTL — this is final, not transient).
+        setIsConnected(false);
+        isConnectedRef.current = false;
+        taverneInitSeenRef.current = false;
+        reconnectAttemptsRef.current = 0;
+        resetPresence();
+        setError(roomRejectedMessage());
+        setErrorKind("room-rejected");
         return;
       }
       const attempted = lastPlaceRef.current;
@@ -1182,6 +1302,11 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
       // Voluntary: no message clear and no guard arming here.
       // Micro-drop + same-tavern auto reconnect = history preserved.
       // The clear + guard live on idLieu change only.
+      // The drop surfaces as a tavern error (kind `dropped`) with its retry
+      // affordance; the backoff auto-reconnect below keeps running and the
+      // next ws-connected clears both.
+      setError(tavernDroppedMessage());
+      setErrorKind("dropped");
       resetPresence();
       // Auto-reconnect: only on unexpected loss (we were connected), never
       // when no live session is required, with backoff and stop on success
@@ -1189,24 +1314,33 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
       if (usernameRef.current && wasConnected) scheduleReconnect();
     }).then((u) => trackUnlisten(u));
 
-    listen<string>("ws-connected", () => {
+    listen<string>("ws-connected", (e) => {
       if (disposed) return;
+      // Lieu gate (mirrors useVillagePresence's village gate): the shared
+      // socket fires `ws-connected` for village dials too ("Connected to
+      // the village") — only the tavern ack may mark the tavern connected,
+      // disarm the race guard, or reset reconnect accounting. A village
+      // connect previously did all three, corrupting isConnected + backoff.
+      if (e.payload !== TAVERN_CONNECTED_MSG) return;
       // New connection: reset guards (never on re-renders) and disarm the
       // race guard — following messages are fresh.
       awaitingFreshRef.current = false;
       enteredSelfRef.current = false;
+      taverneInitSeenRef.current = false;
       reconnectAttemptsRef.current = 0;
       clearReconnectTimer();
       stopAutoSeat();
       setIsConnected(true);
       isConnectedRef.current = true;
       setError("");
+      setErrorKind(null);
       setStatus(t("status.connected"));
       if (usernameRef.current) {
         addPresent(usernameRef.current);
         // No longer simulating place 0: ask the server for a free, simple seat.
         // Idempotent: armAutoSeat ignores if already pending for this connection.
-        armAutoSeat();
+        // Tavern-phase only: a village-preview ws-connected must not auto-seat.
+        if (isTavernPhaseRef.current && idLieuRef.current != null) armAutoSeat();
       }
     }).then((u) => trackUnlisten(u));
 
@@ -1297,10 +1431,49 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
   const unbanPlayer = (login: string): Promise<void> =>
     withTransientError(() => api.taverneUnban(login));
 
+  // Manual tavern re-dial (headless entry point for the designer).
+  // Resets the init gate + backoff accounting, clears the error/kind, arms
+  // the fresh-guard, then reuses the wsConnect path (backend owns
+  // teardown-before-dial, gen-guarded latest-wins single-flight — no double
+  // socket). Phase-owned: no-ops outside the tavern room phase (the village
+  // retry owns the picker phase, and vice versa) and over a live session.
+  const retryTavern = async (): Promise<void> => {
+    if (retryInFlightRef.current) return;
+    if (!isTavernPhaseRef.current) return;
+    if (isConnectedRef.current) return;
+    retryInFlightRef.current = true;
+    try {
+      taverneInitSeenRef.current = false;
+      reconnectAttemptsRef.current = 0;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      setError("");
+      setErrorKind(null);
+      awaitingFreshRef.current = true;
+      await api.wsConnect(idLieuRef.current);
+    } catch (e) {
+      setError(String(e));
+      setErrorKind("dropped");
+    } finally {
+      retryInFlightRef.current = false;
+    }
+  };
+
+  // External error clears (App login/enter/leave/cancel flows) also drop a
+  // stale kind — a cleared banner must never keep a retry affordance. The
+  // connection paths above set message + kind explicitly via the raw
+  // setters; transient errors leave the kind alone.
+  const setErrorAndKind = (msg: string): void => {
+    setError(msg);
+    if (!msg) setErrorKind(null);
+  };
+
   return {
     messages, setMessages,
     presentUsers, places, totalPlaces, selectedPlace, setSelectedPlace,
-    error, setError, status, setStatus,
+    error, setError: setErrorAndKind, errorKind, setErrorKind, status, setStatus,
     isConnected, setIsConnected,
     typingUsers,
     // Lane F2 — tavern ground type for the reserved-seat status icons.
@@ -1309,6 +1482,8 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
     // Lane F1 — social/economy (later lanes build on these names).
     menus, ecus, ecusPulse, alcoolRate, alcoolByLogin, tournee, kicked, banned,
     offerDrink, orderMenu, orderDrink, buyTournee, clearTournee, clearSocialState,
+    // Distinct tavern error plumbing + manual retry (headless, designer UI).
+    retryTavern,
     // Lane F3 — consent, fatal flags, flood mute, moderation.
     accepteAlcool, needsRefresh, floodMuted,
     toggleAccepteAlcool, kickPlayer, banPlayer, unbanPlayer,

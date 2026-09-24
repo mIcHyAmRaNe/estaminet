@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## [0.6.0] - 2026-09-24
+
+### Fixed
+- Intermittent 41 on village (`prioritaire=false`) → tavern
+  (`prioritaire=true`) switch: early stale-abort on a superseded dial,
+  always-wait teardown of the prior socket, `prioritaire`/`gen` dial
+  logging, and `room-rejected` vs abnormal-drop distinction on close.
+- Frontend hook coordination: village presence suspends on tavern Enter /
+  quit, `ws-connected` is lieu-gated so a village ack no longer marks the
+  tavern connected, terminal `room-rejected` stops with no auto-retry
+  while post-init drops keep the backoff reconnect.
+- Distinct village vs tavern errors with their own retry entry points
+  (no cross-wiring).
+
+### Added
+- Retry icon-button UI: `TavernErrorBanner` in the room plus a retry band
+  on the village picker error.
+
 ## [0.5.9] - 2026-09-15
 
 ### Added

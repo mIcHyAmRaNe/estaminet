@@ -9,6 +9,7 @@ import { useAutoScroll } from "../../lib/hooks/useAutoScroll";
 import { isChopineText } from "../../lib/utils/chat-guards";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
+import TavernErrorBanner from "./TavernErrorBanner";
 import TourneeOverlay from "./TourneeOverlay";
 import FatalOverlay, { type FatalKind } from "./FatalOverlay";
 import PlayerMenu from "./PlayerMenu";
@@ -524,6 +525,17 @@ export default function ChatRoom(props: ChatRoomProps) {
             accepteAlcool={props.accepteAlcool}
             onToggleAlcool={props.onToggleAlcool}
           />
+
+          {/* Distinct tavern connection errors (room-rejected terminal /
+              dropped while the backoff continues): persistent message + icon
+              retry button. Transient errors reuse the strip message-only. */}
+          {props.tavernError ? (
+            <TavernErrorBanner
+              message={props.tavernError}
+              kind={props.tavernErrorKind ?? null}
+              onRetry={props.onRetryTavern}
+            />
+          ) : null}
 
           <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
             <MessageList messages={props.messages} listRef={listRef} onScroll={handleScroll} players={baseList} />

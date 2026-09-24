@@ -46,6 +46,8 @@ declare module "preact/jsx-runtime" {
       footer: Record<string, unknown>;
       fieldset: Record<string, unknown>;
       legend: Record<string, unknown>;
+      details: Record<string, unknown>;
+      summary: Record<string, unknown>;
     }
   }
 }

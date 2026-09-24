@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use crate::network::socket::Lieu;
+
 /// Centralized logging helpers — use these instead of raw `println!` / `eprintln!`.
 #[inline]
 pub fn log_info(msg: &str) {
@@ -49,18 +51,32 @@ pub fn hidden_log_dir() -> Result<PathBuf, String> {
 }
 
 pub fn log_path_for(tavern_id: u64) -> Result<PathBuf, String> {
-    let dir = hidden_log_dir()?;
-    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
-    Ok(dir.join(format!("taverne_{}_{}.log", tavern_id, date)))
+    log_path_for_lieu(Lieu::Taverne(tavern_id))
 }
 
-/// Append one timestamped line to the per-taverne daily log file.
+/// Lieu-aware daily log path: `taverne_<id>_<date>.log` for tavern presence,
+/// `village_<id>_<date>.log` for village presence (B3 log split).
+pub(crate) fn log_path_for_lieu(lieu: Lieu) -> Result<PathBuf, String> {
+    let dir = hidden_log_dir()?;
+    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let prefix = match lieu {
+        Lieu::Taverne(_) => "taverne",
+        Lieu::Village(..) => "village",
+    };
+    Ok(dir.join(format!("{prefix}_{}_{date}.log", lieu.id())))
+}
+
+/// Append one timestamped line to the per-lieu daily log file.
 /// Best-effort: failures are silently ignored. An empty `prefix` writes the
 /// line bare (`[ts] {payload}`), otherwise `[ts] {prefix} {payload}`.
-pub fn append_line(tavern_id: u64, prefix: &str, payload: &str) {
-    let Ok(path) = log_path_for(tavern_id) else {
+pub(crate) fn append_line_for_lieu(lieu: Lieu, prefix: &str, payload: &str) {
+    let Ok(path) = log_path_for_lieu(lieu) else {
         return;
     };
+    append_to_path(&path, prefix, payload);
+}
+
+fn append_to_path(path: &std::path::Path, prefix: &str, payload: &str) {
     let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let entry = if prefix.is_empty() {
         format!("[{ts}] {payload}\n")
@@ -70,16 +86,16 @@ pub fn append_line(tavern_id: u64, prefix: &str, payload: &str) {
     let _ = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&path)
+        .open(path)
         .and_then(|mut f| {
             use std::io::Write;
             f.write_all(entry.as_bytes())
         });
 }
 
-/// Append a raw socket line to the per-taverne daily log file.
+/// Append a raw socket line to the per-lieu daily log file.
 /// Used by the WebSocket task — failures are silently ignored (best-effort).
-pub fn append_ws_line(tavern_id: u64, line: &str) {
+pub(crate) fn append_ws_line_for_lieu(lieu: Lieu, line: &str) {
     // Spawn-independent helper: keep logic out of socket.rs
-    append_line(tavern_id, "", line);
+    append_line_for_lieu(lieu, "", line);
 }

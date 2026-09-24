@@ -4,7 +4,7 @@ mod error;
 mod network;
 mod utils;
 
-use commands::{auth, chat, logs, taverne};
+use commands::{auth, chat, logs, taverne, village};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -41,6 +41,9 @@ pub fn run() {
             chat::taverne_kick,
             chat::taverne_ban,
             chat::taverne_unban,
+            village::village_connect,
+            village::get_player_village,
+            village::get_player_vetements,
             logs::save_chat_log,
             logs::get_log_dir,
             logs::get_full_log

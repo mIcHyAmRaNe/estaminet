@@ -100,6 +100,7 @@ export interface AuthStepProps {
   onConnectSaved: () => void;
   onConnectForm: (e: Event) => void;
   onRemoveAccount: (username: string) => void;
+  onCancel?: () => void;
 }
 
 // Step 2 — tavern choice with recents above the carousel.
@@ -115,6 +116,28 @@ export interface TavernSelectProps {
   onEnter: () => void;
   onBack: () => void;
   onForgetCurrent?: () => void;
+  onCancel?: () => void;
+  // Home-village presence only (display, never dials from here — App
+  // auto-dials the player's own NomVillage once per tavern-phase entry).
+  // villageName is the home village display name so the band shows even
+  // while the roster is still connecting.
+  // The band is ALWAYS rendered in the tavern phase (even while the name
+  // fetch is pending or failed) so loading vs failed vs unmapped stays
+  // visible instead of a silent gap.
+  villageId?: number | null;
+  villageName?: string | null;
+  villageUsers?: string[];
+  villageCount?: number;
+  villageConnected?: boolean;
+  villageError?: string | null;
+  // Distinct village error kind (hook-owned, "roster-failed" | "dropped"):
+  // gates the retry button — null (e.g. the unverified fetch notice) shows
+  // the message without it. Absent = unknown, keeps the button.
+  villageErrorKind?: "roster-failed" | "dropped" | null;
+  // Manual village re-dial for the error-row icon button (App threads
+  // village.retryVillage — the band itself never dials).
+  onRetryVillage?: () => void;
+  villageFetchState?: "idle" | "loading" | "ok" | "error";
 }
 
 export interface RecentTavernsProps {
@@ -169,6 +192,13 @@ export interface ChatRoomProps {
   // Portrait fallback notice (Rust `portrait-warning` event): yellow
   // floating toast text; null when none. Wired in App.tsx from useTaverne.
   portraitWarning?: string | null;
+  // Distinct tavern connection error (hook-owned error/errorKind) + manual
+  // retry (App threads taverne.retryTavern). Rendered as a persistent banner
+  // under the header: message always, icon retry button when the kind marks
+  // a connection error (room-rejected terminal / dropped with backoff).
+  tavernError?: string | null;
+  tavernErrorKind?: "room-rejected" | "dropped" | null;
+  onRetryTavern?: () => void | Promise<void>;
   // Lane F3 — moderation (PlayerMenu; server enforces rights).
   onKickPlayer?: (login: string) => void;
   onBanPlayer?: (login: string) => void;

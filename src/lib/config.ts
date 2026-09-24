@@ -30,7 +30,7 @@ export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
 // App version fallback for the About dialog (runtime source of truth is
 // getVersion() from @tauri-apps/api/app; keep in sync with package.json).
-export const APP_VERSION = "0.5.9";
+export const APP_VERSION = "0.6.0";
 
 // Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";
@@ -59,6 +59,27 @@ export const WS_RECONNECT_DELAY_MS = 900;
 // Any other payload = abnormal drop → auto-reconnect kicks in.
 export const WS_CLOSE_VOLUNTARY = "voluntary-close";
 
+// Lieu-tagged `ws-connected` payload for a tavern dial (Rust counterpart:
+// network/socket.rs `register_handlers` — keep in sync). The village twin
+// ("Connected to the village") lives next to its hook (useVillagePresence);
+// this one gates useTaverne: the shared socket fires `ws-connected` for
+// village dials too, and only the tavern ack may mark the tavern connected
+// (otherwise a village connect corrupts isConnected + reconnect accounting).
+export const TAVERN_CONNECTED_MSG = "Connected to the tavern";
+
+// Distinct `ws-closed` payload for a room-rejected dial (taverne fermée /
+// accès refusé): terminal, no retry. Any other non-voluntary payload =
+// abnormal drop → backoff reconnect, but ONLY after taverneInit. Older
+// backends predate the distinct payload and send generic strings
+// ("Authentication error (41)", …) — still handled (compat): pre-init
+// closes are terminal, post-init drops keep the backoff.
+export const WS_CLOSE_ROOM_REJECTED = "room-rejected";
+
+// Connect UX: abort/timeout for login + tavern-enter (Esc cancels, timer
+// restores the prior phase with a friendly error). Generous: Tauri window
+// on slow networks still completes inside this window.
+export const CONNECT_TIMEOUT_MS = 30000;
+
 // URLs (display only — keep canonical in Rust config.rs)
 export const RK_BASE = "https://www.renaissancekingdoms.com";
 // Midas calques: this root is only used to BUILD calque URLs — the bytes are
@@ -73,6 +94,26 @@ export const MIDAS_CDN = "https://lesroyaumes.cdn.oxv.fr/images/";
 // Tavern ground type for church mode (official "eglise"): drives reserved-seat
 // icons + drink-feature gating. Single source (was hardcoded in ChatRoom/ChatHeader).
 export const LIEU_EGLISE = "eglise";
+
+// Village IDLieu map for picker-phase presence (village_connect).
+// Key = tavern `ville` string from taverns.json, value = village IDLieu for
+// the 42["changeSalon",{"typeLieu":"village","IDLieu":..}] spike.
+// Only confirmed ids are listed — unknown villes omit keys so the lookup
+// returns undefined => null (never guess). Confirmed: 326 = Montpellier
+// (live getInfosSalon {typeLieu:village, IDLieu:326}), 461 = Bordeaux
+// (Eren_j home village; spawn coords in socket.rs still placeholder pending
+// a live Bordeaux getInfosSalon capture).
+export const VILLAGE_IDS: Record<string, number> = {
+  Montpellier: 326,
+  "Montpellier (Comté de Languedoc)": 326,
+  Bordeaux: 461,
+  "Bordeaux (Comté Guyenne)": 461,
+};
+
+// Village picker preselect + presence roster wait: how long the picker waits
+// for the villeInfosPersonnages connectMe roster before showing the
+// unverified error instead of a silent empty list.
+export const VILLAGE_CONNECTME_TIMEOUT_MS = 10000;
 
 // Chat slash-command allowlist (official commands only; others trigger bredouille).
 export const CHAT_SLASH_ALLOWLIST: readonly string[] = ["/me ", "/faire ", "/emote ", "/w ", "/manger ", "/boire", "/boire "];

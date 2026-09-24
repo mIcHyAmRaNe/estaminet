@@ -318,10 +318,8 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
     ];
   }, [filtered, centerIndex]);
 
-  // Single source of truth: App's idLieu (selectedId). The centered card
-  // follows it via the sync effect above; the label reads it directly so
-  // a recent click updates the label even before the recenter lands.
-  const selectedTavern = taverns.find((tav) => tav.id === selectedId) ?? filtered[centerIndex];
+  // Centered-card sync only: the authoritative "selected" line now lives
+  // in TavernSelect (unified for list + custom picks), so no label here.
 
   return (
     <div class="field tavern-carousel">
@@ -501,11 +499,6 @@ export default function TavernCarousel({ taverns, selectedId, onSelect }: Props)
               <ChevronRight size={22} />
             </button>
           </div>
-          {selectedTavern && (
-            <p class="tavern-selected" aria-live="polite">
-              {t("auth.tavernSelected", { name: selectedTavern.name })}
-            </p>
-          )}
         </>
       )}
     </div>

@@ -6,7 +6,7 @@ pub const REFERER: &str = "https://www.renaissancekingdoms.com/";
 pub const COOKIE_SITE: &str = "https://www.renaissancekingdoms.com/";
 
 pub const CHAT_WSS_URL_TMPL: &str =
-    "wss://chat.lesroyaumes.com/socket.io/?login={}&token={}&prioritaire=true&EIO=3&transport=websocket";
+    "wss://chat.lesroyaumes.com/socket.io/?login={}&token={}&prioritaire={}&EIO=3&transport=websocket";
 
 // Endpoint URLs — centralize all renaissancekingdoms.com URLs here
 pub const URL_LOGIN: &str = "https://www.renaissancekingdoms.com/ConnexionKC.php";
@@ -15,6 +15,8 @@ pub const URL_FICHE_PERSONNAGE: &str =
     "https://www.renaissancekingdoms.com/FichePersonnage.php";
 pub const URL_ZOOM_PERSONNAGE: &str =
     "https://www.renaissancekingdoms.com/ZoomPersonnage.php";
+pub const URL_ECRAN_PRINCIPAL: &str =
+    "https://www.renaissancekingdoms.com/EcranPrincipal.php";
 
 /// oxv images CDN root — mirror of MIDAS_CDN in src/lib/config.ts. The
 /// `fetch_portrait_asset` proxy only serves URLs under this prefix (SSRF guard).
@@ -29,5 +31,21 @@ pub const WS_CHANNEL_CAP: usize = 32;
 /// (logout / Quit button). The frontend uses it to skip auto-reconnect.
 /// Any other payload = abnormal close → reconnect.
 pub const WS_CLOSE_VOLUNTARY: &str = "voluntary-close";
+
+/// Payload of the Tauri `ws-closed` event emitted when the server sends
+/// socket.io close ("41") before any room-init frame for this dial
+/// (`taverneInit` for a tavern dial, `villeInfosPersonnages` for a village
+/// dial): the room refused presence (e.g. ghost overlap on a rapid
+/// village→tavern switch), not a network drop. The frontend shows a
+/// friendly error instead of blind retry; drops after init keep the
+/// "Disconnected by the server" payload (retry path).
+pub const WS_CLOSE_ROOM_REJECTED: &str = "room-rejected";
+
+/// Delay letting the server digest the "41" close before a new dial.
+/// Unconditional (even when the old channel was already dead after a
+/// server-sent 41): without it rapid reconnect bursts hammer the server
+/// and the new `changeSalon` races the reaped ghost, surfacing as an
+/// intermittent 41 after `changeSalon` on village→tavern switches.
+pub const WS_TEARDOWN_DIGEST_MS: u64 = 250;
 
 pub const PLACE_MAX: u64 = 9;

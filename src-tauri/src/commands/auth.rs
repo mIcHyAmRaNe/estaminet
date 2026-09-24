@@ -228,6 +228,12 @@ pub async fn ws_disconnect(
         // Session kept — token/jar/client retained for a later `ws_connect`.
         s.close_tx().await;
     }
+    // Presence target cleared with the socket: a stale `Village` must not
+    // block later tavern commands (each `ws_connect_lieu` sets it fresh).
+    *state.current_lieu.lock().await = None;
+    // B1 (mirrors `teardown_session`): stale any in-flight dial attempt so
+    // its late commit/emit is suppressed after this voluntary close.
+    state.dial.lock().await.gen += 1;
     let _ = app.emit("ws-closed", config::WS_CLOSE_VOLUNTARY);
     logs::log_info("ws_disconnect: ws closed voluntarily (41 + ws-closed), session kept");
     Ok(())
