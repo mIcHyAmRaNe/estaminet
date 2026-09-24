@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.1] - 2026-09-24
+
+### Added
+- House (`maison`) socket: `Lieu::Maison` (chat-capable, `prioritaire=false`), `build_change_salon_maison` (`IDLieu` per `infosPlayer.IDLieu` / numeric entry fallback), `maison_connect`, `maison_send`, `get_maison_id` resolver (page + AJAX fallback with `infosPlayer` sweep), `getIdLieu` protocol replication from `jsMaisonPixi`, single-socket discipline preserved.
+- Frontend house entry: `TavernSelect` custom-house input (login or numeric IDLieu), `App` `handleEnterHouse` (resolve → dial → `roomKind="maison"`), `useMaisonChat` hook (`maisonInit`/`maisonInfosPersonnages`/`maisonMessage`, generation-guarded, self-added on empty `connectMe`, typing handled via `taverneDebuteMessage`/`AnnuleMessage`, no-emote `maisonMsgType`), `api.maisonConnect`/`maisonSend`, i18n (`maison.*`).
+
+### Fixed
+- `maison` page fetch: URL query (`l=23&t=m&p=`), `infosPlayer` balanced-JSON anchor with `IDLieu`-family extraction, `EcranPrincipalAjax.php` fallback, diagnostic logging (counts, context snippets, flags) without credential exposure.
+- Numeric house-ID entry as fallback; `getMaisonId` resolves both paths.
+
 ## Unreleased
 
 ## [0.6.0] - 2026-09-24

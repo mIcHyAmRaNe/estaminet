@@ -83,6 +83,14 @@ export default function TavernSelect(props: TavernSelectProps) {
   const { showStatus, toastLeaving } = useStatusToast(props.status, props.error);
   const [customValue, setCustomValue] = useState("");
   const [customError, setCustomError] = useState("");
+  // House entry: same <details> pattern as the custom tavern above, but the
+  // input is an owner login — or a numeric house IDLieu pasted from
+  // devtools (WS changeSalon frame) when the page resolver misses the
+  // house. Either form enters directly (no separate select step); the
+  // trimmed raw string passes through to onEnterHouse unchanged.
+  const [houseValue, setHouseValue] = useState("");
+  const [houseError, setHouseError] = useState("");
+  const [houseBusy, setHouseBusy] = useState(false);
 
   const trimmed = customValue.trim();
   const parsedCustom = /^\d{1,10}$/.test(trimmed) ? Number(trimmed) : null;
@@ -105,6 +113,34 @@ export default function TavernSelect(props: TavernSelectProps) {
     }
     setCustomError("");
     if (parsedCustom !== props.selectedId) props.onSelect(parsedCustom);
+  };
+
+  const houseLogin = houseValue.trim();
+  // All-digit input is a raw IDLieu (App dials it directly, no resolve);
+  // otherwise the entry must look like a login (no spaces/slashes/quotes).
+  const houseIsId = /^\d{1,10}$/.test(houseLogin);
+  const houseValid =
+    houseLogin.length > 0 &&
+    houseLogin.length <= 40 &&
+    (houseIsId || !/[\s\/"]/.test(houseLogin));
+
+  const submitHouse = async () => {
+    if (!houseValid) {
+      setHouseError(t("auth.customHouseInvalid"));
+      return;
+    }
+    if (props.loading || houseBusy || !props.onEnterHouse) return;
+    setHouseError("");
+    setHouseBusy(true);
+    try {
+      await props.onEnterHouse(houseLogin);
+    } catch {
+      // Resolve/dial failed (unknown login, offline): stay on the picker
+      // with the inline error — App leaves the phase untouched.
+      setHouseError(t("auth.customHouseFailed"));
+    } finally {
+      setHouseBusy(false);
+    }
   };
 
   return (
@@ -217,6 +253,45 @@ export default function TavernSelect(props: TavernSelectProps) {
             </p>
           )}
         </details>
+
+        {props.onEnterHouse && (
+          <details class="custom-tavern">
+            <summary class="custom-tavern-toggle">{t("auth.customHouseToggle")}</summary>
+            <p class="custom-tavern-hint">{t("auth.customHouseHint")}</p>
+            <div class="custom-tavern-row">
+              <input
+                type="text"
+                class="custom-tavern-input"
+                value={houseValue}
+                onInput={(e: Event) => {
+                  setHouseValue((e.currentTarget as HTMLInputElement).value);
+                  if (houseError) setHouseError("");
+                }}
+                onKeyDown={(e: KeyboardEvent) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void submitHouse();
+                  }
+                }}
+                placeholder={t("auth.customHousePlaceholder")}
+                aria-label={t("auth.customHousePlaceholder")}
+                disabled={props.loading || houseBusy}
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                class="btn-primary custom-tavern-apply"
+                onClick={() => void submitHouse()}
+                disabled={props.loading || houseBusy || !houseValid}
+              >
+                {props.loading || houseBusy ? t("auth.entering") : t("auth.enterHouse")}
+              </button>
+            </div>
+            {houseError && (
+              <p class="custom-tavern-error" role="alert">{houseError}</p>
+            )}
+          </details>
+        )}
 
         {props.selectedId > 0 && (
           <p class="tavern-selected tavern-selected--unified" aria-live="polite">

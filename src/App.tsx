@@ -3,6 +3,7 @@ import { api } from "./api/tauri";
 import { t } from "./lib/i18n";
 import { DEFAULT_TAVERN_ID, DEFAULT_PLACES, MAX_PLACES, CHAT_SLASH_ALLOWLIST, CONNECT_TIMEOUT_MS, VILLAGE_IDS } from "./lib/config";
 import { useTaverne } from "./lib/hooks/useTaverne";
+import { useMaisonChat } from "./lib/hooks/useMaisonChat";
 import { useVillagePresence } from "./lib/hooks/useVillagePresence";
 import { useBredouille } from "./lib/hooks/useBredouille";
 import { useRecents } from "./lib/hooks/useRecents";
@@ -60,6 +61,13 @@ export default function App() {
   //   until wsDisconnect resolved (teardown before re-dial, never both).
   const [enterPending, setEnterPending] = useState(false);
   const [leavingRoom, setLeavingRoom] = useState(false);
+  // Room kind: taverns use the App-owned wsConnect path, houses use the
+  // headless maison path (get_maison_id -> maisonConnect -> useMaisonChat).
+  // The picker + phase machine are shared; only the dial + room wiring
+  // differ. Defaults to tavern so the existing flow is untouched.
+  const [roomKind, setRoomKind] = useState<"tavern" | "maison">("tavern");
+  const [maisonId, setMaisonId] = useState<number | null>(null);
+  const [maisonOwner, setMaisonOwner] = useState<string | null>(null);
   // Single-flight guard against double-connection (mirrors the official JS
   // `_initialisationEnCours`). `connecting` drives the UI,
   // `connectingRef` is the synchronous anti-burst guard (double-click).
@@ -70,8 +78,9 @@ export default function App() {
   // only arm/fire while the tavern room owns the socket (phase "room"). The
   // home-village presence ("tavern") shares the socket's ws-connected —
   // without this gate a village roster leaks 42["taverneChangePlace",…].
-  // No change to onSelect/onEnter.
-  const taverne = useTaverne(username, idLieu, tavernPlaces, phase === "room");
+  // No change to onSelect/onEnter. Maison rooms gate it off too (kind
+  // tavern only) so the tavern hook never fights the house hook.
+  const taverne = useTaverne(username, idLieu, tavernPlaces, phase === "room" && roomKind === "tavern");
   // Home-village presence only: the band never offers a choice — any
   // IDLieu returns whoever is there, so only the player's own NomVillage
   // is honest. Fetched once per account per tavern-phase entry
@@ -158,7 +167,16 @@ export default function App() {
   }, [tavernPlaces]);
   const bredouille = useBredouille(taverne.isConnected);
   const { recents, push: pushRecent } = useRecents();
-  // Shell-level silent update check (banner renders phase-independently).
+  // Headless house chat: enabled only while the maison room owns the socket
+  // (phase room + kind maison + resolved id). Suspended across Enter/Leave
+  // transitions so picker/room dials never overlap on the shared socket —
+  // the same suspended mirror as the village presence above.
+  const maison = useMaisonChat({
+    enabled: phase === "room" && roomKind === "maison" && maisonId !== null,
+    maisonId,
+    suspended: enterPending || leavingRoom,
+    currentUser: username,
+  });  // Shell-level silent update check (banner renders phase-independently).
   const updater = useUpdater();
 
   // Attempt id: Esc / Annuler / watchdog increments it so a late Tauri
@@ -341,6 +359,8 @@ export default function App() {
     // any in-flight villageConnect) so village close + tavern dial never
     // race on the shared socket.
     setEnterPending(true);
+    // Flag the room as a tavern (the wsConnect flow below is byte-identical).
+    setRoomKind("tavern");
     try {
       await api.wsConnect(idLieu);
       if (attempt !== attemptRef.current) return;
@@ -352,6 +372,52 @@ export default function App() {
       if (attempt !== attemptRef.current) return;
       console.error("[tavern] enter failed:", err);
       taverne.setError(t("error.enterFailed"));
+    } finally {
+      if (attempt !== attemptRef.current) return;
+      setEnterPending(false);
+      setConnecting(false);
+      connectingRef.current = false;
+    }
+  };
+
+  // Step 2 — House: owner login -> numeric IDLieu, then the room phase
+  // flagged as maison. An all-digit entry is already an IDLieu (read from
+  // the WS changeSalon frame in devtools) and skips the page resolver,
+  // which misses some houses — the room label then falls back to
+  // maison.title with the id. Mirrors handleEnterTavern guards (single-flight,
+  // attempt id, Enter suspension). The socket dial itself is hook-owned:
+  // useMaisonChat dials on enable with the per-user outfit (village
+  // discipline) — no explicit maisonConnect here, otherwise the outfit-less
+  // App dial (Maison(id, None)) and the hook dial (Maison(id, Some)) are
+  // different Lieux and the backend queues a second teardown+redial instead
+  // of swallowing a duplicate. Throws on failure so the picker shows the
+  // inline house error and stays put (phase never changes until success);
+  // dial failures after that surface in-room via the hook's maisonError.
+  const handleEnterHouse = async (ownerLogin: string) => {
+    if (connectingRef.current || connecting) return;
+    connectingRef.current = true;
+    const attempt = ++attemptRef.current;
+    taverne.setError("");
+    setConnecting(true);
+    setEnterPending(true);
+    try {
+      const login = ownerLogin.trim();
+      // Numeric fast path: exact IDLieu, no resolver round-trip.
+      const numericId = /^\d{1,10}$/.test(login) ? Number(login) : 0;
+      const id = numericId > 0 ? numericId : await api.getMaisonId(login);
+      if (attempt !== attemptRef.current) return;
+      setMaisonId(id);
+      // Owner label: the login when resolved, the raw id on the numeric
+      // fast path (maison.title renders "Maison de <id>").
+      setMaisonOwner(login);
+      // Entering the room leaves the tavern phase: presence auto-disables
+      // via its enabled gate (phase tavern + home id), no stale roster.
+      setRoomKind("maison");
+      setPhase("room");
+    } catch (err) {
+      if (attempt !== attemptRef.current) return;
+      console.error("[maison] enter failed:", err);
+      throw err;
     } finally {
       if (attempt !== attemptRef.current) return;
       setEnterPending(false);
@@ -428,6 +494,12 @@ export default function App() {
       // Socket already down — return to taverns anyway.
     }
     clearRoomState();
+    // Leaving a house room too: the maison hook auto-clears on disable
+    // (phase gate), but the kind + target reset here so the next enter
+    // starts clean and the picker never inherits a stale house.
+    setMaisonId(null);
+    setMaisonOwner(null);
+    setRoomKind("tavern");
     // Back in the picker the home dial re-arms on its own (phase gate) —
     // the tavern socket close drops the shared presence first. Any stale
     // room connection error (room-rejected/dropped + retry affordance) is
@@ -477,6 +549,48 @@ export default function App() {
       ta.remove();
     }
     api.saveChatLog(idLieu, t("chat.copyMarker", { date: new Date().toISOString(), content: full })).catch(() => {});
+  };
+
+  // Maison room send: headless maisonSend (parler, "/crier …" shouts).
+  // Send failures surface on the room banner via the taverne.error fallback
+  // (see the maison ChatRoom below); the input is kept so nothing is lost.
+  const handleSendMaison = async (e: Event) => {
+    e.preventDefault();
+    const raw = inputMessage.trim();
+    if (!raw || !maison.isConnected) return;
+    const shout = raw.match(/^\/crier\s+([\s\S]+)/i);
+    const msgType = shout ? "crier" : "parler";
+    const text = shout && shout[1] ? shout[1].trim() : raw;
+    if (!text) return;
+    try {
+      await maison.sendMaison(msgType, text);
+      setInputMessage("");
+    } catch (err) {
+      taverne.setError(t("error.sendFailed", { err: String(err) }));
+    }
+  };
+
+  const handleCopyMaison = async () => {
+    const text = maison.messages
+      .map((m) => (m.type === "normal" || m.type === "whisper" ? `${m.login}: ${m.content}` : m.content))
+      .join("\n");
+    const houseName = maisonOwner
+      ? t("maison.title", { name: maisonOwner })
+      : t("tavern.fallback", { id: maisonId ?? 0 });
+    const full = `${t("chat.copyHeader", { name: houseName, date: new Date().toLocaleString() })}\n${"=".repeat(48)}\n${text}`;
+    try {
+      await navigator.clipboard.writeText(full);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = full;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    if (maisonId !== null) {
+      api.saveChatLog(maisonId, t("chat.copyMarker", { date: new Date().toISOString(), content: full })).catch(() => {});
+    }
   };
 
   const handleChangePlace = async (idPlace: number) => {
@@ -534,6 +648,9 @@ export default function App() {
             onBack={handleBackToAuth}
             onForgetCurrent={handleForgetCurrent}
             onCancel={handleCancelConnect}
+            // House entry: owner-login block resolving via get_maison_id +
+            // maisonConnect, then the room phase flagged as maison.
+            onEnterHouse={handleEnterHouse}
             villageId={village.villageId}
             villageName={homeVillageName ?? village.villageName}
             villageUsers={village.onlineUsers}
@@ -557,6 +674,41 @@ export default function App() {
     </>
   );
 }
+
+  // Maison room: the same ChatRoom shell, headless (no seats, menus, or
+  // tavern social chrome) wired to useMaisonChat. Maison errors reuse the
+  // banner with maison copy (never tavern copy); only "dropped" maps onto
+  // the banner kind, roster failures stay message-only. A tavern send
+  // failure (shared input) falls back into the same banner.
+  if (roomKind === "maison") {
+    return (
+      <>
+      <div class="tavern-fullscreen">
+        <ChatRoom
+          messages={maison.messages}
+          presentUsers={maison.onlineUsers}
+          inputMessage={inputMessage}
+          setInputMessage={setInputMessage}
+          onSend={handleSendMaison}
+          onDisconnect={handleLeaveRoom}
+          onCopy={handleCopyMaison}
+          isConnected={maison.isConnected}
+          tavernName={maisonOwner ? t("maison.title", { name: maisonOwner }) : t("tavern.fallback", { id: maisonId ?? 0 })}
+          currentUser={username}
+          tavernError={maison.maisonError ?? (taverne.error || null)}
+          tavernErrorKind={maison.maisonErrorKind === "dropped" ? "dropped" : null}
+          onRetryTavern={maison.retryMaison}
+        />
+      </div>
+        <UpdatePrompt
+          status={updater.status}
+          version={updater.version}
+          error={updater.error}
+          onInstall={updater.installAndRestart}
+        />
+      </>
+    );
+  }
 
   return (
     <>

@@ -44,6 +44,23 @@ export const api = {
   // fall back to undefined (backend sends `{}`).
   getPlayerVetements: () => invoke<unknown | null>("get_player_vetements"),
 
+  // House IDLieu for an owner login (numeric IDLieu for maisonConnect).
+  // Backend counterpart: get_maison_id (parallel lane) — { login } -> u64.
+  getMaisonId: (login: string) => invoke<number>("get_maison_id", { login }),
+
+  // House chat (maison phase only): reuses the single socket.
+  // Backend counterpart: maison_connect in src-tauri/src/lib.rs (lane in progress).
+  // `vetements` is the per-user outfit object for changeSalon (omitted →
+  // backend sends `{}`); live sends the full object per user. Tauri maps the
+  // camelCase `idMaison` key onto the backend `id_maison` param.
+  maisonConnect: (idMaison: number, vetements?: unknown) =>
+    invoke<void>("maison_connect", { idMaison, vetements }),
+
+  // House message send (type e.g. "parler" / "crier").
+  // Backend counterpart: maison_send (lane in progress).
+  maisonSend: (msgType: string, message: string) =>
+    invoke<void>("maison_send", { msgType, message }),
+
   wsSend: (message: string) => invoke<void>("ws_send", { message }),
 
   typingStart: () => invoke<void>("ws_typing_start"),

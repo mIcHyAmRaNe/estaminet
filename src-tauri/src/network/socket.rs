@@ -61,6 +61,8 @@ fn build_default_portrait(login: &str) -> String {
 /// versa) — one socket at a time, no parallel connections.
 /// NOTE: village IDLieu scheme is NOT the tavern id — callers pass the
 /// raw `id_village: u64` through, never guess a mapping.
+/// Maison (house) presence mirrors village: chat-capable interior presence
+/// over the same single socket (`changeSalon` with typeLieu=maison).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Lieu {
     Taverne(u64),
@@ -68,30 +70,35 @@ pub(crate) enum Lieu {
     /// `changeSalon` (`None` maps to `{}` — backward compat for callers
     /// without an outfit source; live sends the full object per user).
     Village(u64, Option<serde_json::Value>),
+    /// House presence carrying the house id + per-user `vetements` outfit
+    /// (`None` maps to `{}` like village; live sends the full object).
+    Maison(u64, Option<serde_json::Value>),
 }
 
 impl Lieu {
     pub(crate) fn id(&self) -> u64 {
         match self {
-            Lieu::Taverne(id) | Lieu::Village(id, _) => *id,
+            Lieu::Taverne(id) | Lieu::Village(id, _) | Lieu::Maison(id, _) => *id,
         }
     }
 
     /// Socket `prioritaire` query flag per live-game evidence:
     /// village (`EcranPrincipal.php`) dials `prioritaire=false`,
     /// tavern (`InterieurTaverne.php`) dials `prioritaire=true`.
+    /// Maison dials `prioritaire=false` like village (live capture).
     pub(crate) fn prioritaire(&self) -> bool {
         match self {
             Lieu::Taverne(_) => true,
-            Lieu::Village(..) => false,
+            Lieu::Village(..) | Lieu::Maison(..) => false,
         }
     }
 
-    /// Short kind label for diagnostics (`tavern` / `village`).
+    /// Short kind label for diagnostics (`tavern` / `village` / `maison`).
     pub(crate) fn kind(&self) -> &'static str {
         match self {
             Lieu::Taverne(_) => "tavern",
             Lieu::Village(..) => "village",
+            Lieu::Maison(..) => "maison",
         }
     }
 
@@ -219,9 +226,10 @@ pub(crate) fn build_change_salon_village(
     .to_string()
 }
 
-/// Dispatch to the tavern / village `changeSalon` object builder.
+/// Dispatch to the tavern / village / maison `changeSalon` object builder.
 /// The village `vetements` outfit rides on `Lieu::Village` (`None` maps to
-/// `{}` in `build_change_salon_village`).
+/// `{}` in `build_change_salon_village`); maison mirrors village via
+/// `Lieu::Maison` (`None` maps to `{}` in `build_change_salon_maison`).
 pub(crate) fn build_change_salon_for_lieu(
     login: &str,
     lieu: Lieu,
@@ -232,7 +240,48 @@ pub(crate) fn build_change_salon_for_lieu(
         Lieu::Village(id, vetements) => {
             build_change_salon_village(login, id, portrait_json, vetements)
         }
+        Lieu::Maison(id, vetements) => {
+            build_change_salon_maison(login, id, portrait_json, vetements)
+        }
     }
+}
+
+/// Maison (house) `changeSalon` object per live-game capture (IDLieu
+/// 101704): `{"typeLieu":"maison","IDLieu":101704,"posX":11,"posY":0,
+/// "etage":0,"instance":0,"vetements":{...full outfit},"portrait":"{...}"}`.
+/// Portrait stays the canonicalized string form (byte-exact like the
+/// tavern builder). `posX=11,posY=0,etage=0,instance=0` comes from the live
+/// capture; house spawn is per-house layout so no per-village spawn table
+/// is needed — unmapped ids still dial with the same default spawn.
+/// `vetements`: `None` maps to `{}` like village; live sends the full
+/// per-user outfit object.
+pub(crate) fn build_change_salon_maison(
+    login: &str,
+    id_maison: u64,
+    portrait_json: &str,
+    vetements: Option<serde_json::Value>,
+) -> String {
+    let portrait = canonical_portrait(login, portrait_json);
+    let visage = crate::commands::taverne::code_visage_of(&portrait);
+    // Live `changeSalon` carries the full per-user `vetements` outfit object
+    // alongside the `portrait` string. `None` maps to `{}` (callers without
+    // an outfit source) — never hardcode one user's outfit for all users.
+    let vetements = vetements.unwrap_or_else(|| serde_json::json!({}));
+    logs::log_info(&format!(
+        "changeSalon maison id_maison={id_maison} posX=11 posY=0 codeVisage={visage} ({} bytes)",
+        portrait.len()
+    ));
+    json!({
+        "typeLieu": "maison",
+        "IDLieu": id_maison,
+        "posX": 11,
+        "posY": 0,
+        "etage": 0,
+        "instance": 0,
+        "vetements": vetements,
+        "portrait": portrait
+    })
+    .to_string()
 }
 
 // --- small helpers to keep `ws_connect` focused (spec: split monolith) ---
@@ -297,7 +346,7 @@ fn build_url(login: &str, token: &str, prioritaire: bool) -> String {
     // Use the centralized template — avoids any hard-coded wss:// URL outside config.
     // Login/token substitution is unchanged (no encoding); the third
     // placeholder carries the per-Lieu `prioritaire` flag (tavern=true,
-    // village=false per live-game evidence).
+    // village/maison=false per live-game evidence).
     config::CHAT_WSS_URL_TMPL
         .replacen("{}", login, 1)
         .replacen("{}", token, 1)
@@ -477,11 +526,12 @@ fn register_handlers(
         }
 
         // Send the initial messages. Tavern subscribes to the room state
-        // (changeSalon + refresh); village presence is changeSalon only —
-        // the `villeInfosPersonnages` roster arrives as `ws-message` frames
-        // on the existing bus (no new Tauri event).
+        // (changeSalon + refresh); village/maison presence is changeSalon
+        // only — the `villeInfosPersonnages` / `maisonInfosPersonnages`
+        // roster arrives as `ws-message` frames on the existing bus (no new
+        // Tauri event).
         // Order is protocol-significant — keep tavern
-        // (changeSalon+taverneMajPerso+taverneMajMenus) vs village
+        // (changeSalon+taverneMajPerso+taverneMajMenus) vs village/maison
         // (changeSalon only) exactly as-is.
         let initial: Vec<String> = match lieu {
             Lieu::Taverne(_) => vec![
@@ -489,7 +539,7 @@ fn register_handlers(
                 crate::network::socket_io("taverneMajPerso", &[]),
                 crate::network::socket_io("taverneMajMenus", &[]),
             ],
-            Lieu::Village(..) => vec![change_salon.clone()],
+            Lieu::Village(..) | Lieu::Maison(..) => vec![change_salon.clone()],
         };
         for payload in initial {
             logs::log_info(&format!("Initial send gen={gen} {}: {payload}", lieu.diag()));
@@ -506,6 +556,7 @@ fn register_handlers(
         let connected_msg = match lieu {
             Lieu::Taverne(_) => "Connected to the tavern",
             Lieu::Village(..) => "Connected to the village",
+            Lieu::Maison(..) => "Connected to the maison",
         };
         logs::log_info(&format!(
             "WS connected gen={gen} {}: {connected_msg}",
@@ -517,7 +568,8 @@ fn register_handlers(
         // First tick completes immediately — skip it.
         ping_timer.tick().await;
         // Room-init seen flag for this dial: tavern `taverneInit`, village
-        // `villeInfosPersonnages`. A `41` before init is a room-reject
+        // `villeInfosPersonnages`, maison `maisonInit` /
+        // `maisonInfosPersonnages`. A `41` before init is a room-reject
         // (friendly error, no blind retry); after init it is a real drop
         // (retry path).
         let mut saw_room_init = false;
@@ -587,6 +639,10 @@ fn register_handlers(
                                     Lieu::Village(..) => {
                                         text.contains("\"villeInfosPersonnages\"")
                                     }
+                                    Lieu::Maison(..) => {
+                                        text.contains("\"maisonInit\"")
+                                            || text.contains("\"maisonInfosPersonnages\"")
+                                    }
                                 };
                                 if is_init && !saw_room_init {
                                     saw_room_init = true;
@@ -653,17 +709,18 @@ pub async fn ws_connect(
     .await
 }
 
-/// Shared dial for tavern + village presence (single-socket
+/// Shared dial for tavern + village + maison presence (single-socket
 /// time-multiplexed): one `ws_stream`, one `ws-message` bus, one session
 /// channel. The per-lieu differences are the `changeSalon` object
 /// (`build_change_salon_for_lieu`), the initial-send list in
 /// `register_handlers`, and the `prioritaire` URL flag
-/// (tavern=`true`, village=`false` per live-game evidence).
+/// (tavern=`true`, village/maison=`false` per live-game evidence).
 /// `gen` is the B1 dial generation captured by `chat::dial_with_discipline`:
 /// a stale attempt (newer target queued during the TCP dial) neither spawns
 /// presence nor commits — the drain loop dials the queued target instead.
-/// The lieu-tagged `ws-connected` emit (`"Connected to the tavern"` vs
-/// `"Connected to the village"`) therefore always matches `current_lieu`.
+/// The lieu-tagged `ws-connected` emit (`"Connected to the tavern"` /
+/// `"Connected to the village"` / `"Connected to the maison"`) therefore
+/// always matches `current_lieu`.
 pub async fn ws_connect_lieu(
     login: &str,
     token: &str,
@@ -701,7 +758,8 @@ pub async fn ws_connect_lieu(
 
     // Update the session channel + presence target. Tavern-only
     // commands (`change_place`, `ws_send`) consult `current_lieu` and
-    // refuse on a village socket (live village socket is changeSalon-only).
+    // refuse on a village/maison socket (live village socket is
+    // changeSalon-only).
     // B1 re-check: the awaits on the session locks are a (brief) window in
     // which a newer target may have queued — never commit stale. The
     // spawned task self-suppresses post-handshake via its own gen check,

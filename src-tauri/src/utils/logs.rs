@@ -55,13 +55,15 @@ pub fn log_path_for(tavern_id: u64) -> Result<PathBuf, String> {
 }
 
 /// Lieu-aware daily log path: `taverne_<id>_<date>.log` for tavern presence,
-/// `village_<id>_<date>.log` for village presence (B3 log split).
+/// `village_<id>_<date>.log` for village presence (B3 log split),
+/// `maison_<id>_<date>.log` for maison presence.
 pub(crate) fn log_path_for_lieu(lieu: Lieu) -> Result<PathBuf, String> {
     let dir = hidden_log_dir()?;
     let date = chrono::Local::now().format("%Y-%m-%d").to_string();
     let prefix = match lieu {
         Lieu::Taverne(_) => "taverne",
         Lieu::Village(..) => "village",
+        Lieu::Maison(..) => "maison",
     };
     Ok(dir.join(format!("{prefix}_{}_{date}.log", lieu.id())))
 }

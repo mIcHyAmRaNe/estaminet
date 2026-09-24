@@ -30,7 +30,7 @@ export const LOCALE_STORAGE_KEY = "estaminet.locale";
 
 // App version fallback for the About dialog (runtime source of truth is
 // getVersion() from @tauri-apps/api/app; keep in sync with package.json).
-export const APP_VERSION = "0.6.0";
+export const APP_VERSION = "0.6.1";
 
 // Recent taverns (ora-1 step 2): most-recent-first ids in localStorage.
 export const RECENTS_STORAGE_KEY = "estaminet.recentTaverns";
@@ -114,6 +114,20 @@ export const VILLAGE_IDS: Record<string, number> = {
 // for the villeInfosPersonnages connectMe roster before showing the
 // unverified error instead of a silent empty list.
 export const VILLAGE_CONNECTME_TIMEOUT_MS = 10000;
+
+// Maison (player house) presence + chat: mirrors the village twin above.
+// Payload `ws-connected` for a maison dial (backend lane in progress —
+// keep in sync with the Rust `register_handlers`). Only this ack disarms
+// the maison roster guard on the shared socket — a tavern or village
+// connect must never bless a pending maison roster.
+// The only confirmed home IDLieu is 101704 (player home, spawn 11,0);
+// callers pass the id in — never hardcode another.
+export const MAISON_CONNECTED_MSG = "Connected to the maison";
+
+// Maison roster wait: how long the hook waits for the
+// maisonInfosPersonnages connectMe roster before surfacing the
+// roster-failed error instead of a silent empty list.
+export const MAISON_CONNECTME_TIMEOUT_MS = 10000;
 
 // Chat slash-command allowlist (official commands only; others trigger bredouille).
 export const CHAT_SLASH_ALLOWLIST: readonly string[] = ["/me ", "/faire ", "/emote ", "/w ", "/manger ", "/boire", "/boire "];

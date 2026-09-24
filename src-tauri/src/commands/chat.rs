@@ -24,22 +24,37 @@ async fn send_payload(state: &State<'_, AppState>, payload: String) -> Result<()
     Ok(())
 }
 
-/// `true` when the live single-socket connection is a village presence.
-/// Tavern-only sends (`change_place`, `ws_send`) must refuse in that case:
-/// the live village socket (jsVillePixi) never sends `taverne*` — only
-/// `changeSalon` (with vetements+portrait), then ping / villeInit /
-/// villeInfosPersonnages. `None` (never dialed / torn down) counts as
-/// non-village so error precedence stays `NotConnected`-first.
-async fn is_village_socket(state: &State<'_, AppState>) -> bool {
+/// `true` when the live single-socket connection is a tavern presence.
+/// Tavern-only sends (`ws_send`, `change_place`, `taverne_*`) must refuse
+/// otherwise: both village and maison sockets get the tavern-only error
+/// (live non-tavern sockets never send `taverne*` — village is
+/// changeSalon-only, maison sends `maisonMessage`). `None` (never dialed /
+/// torn down) counts as non-tavern.
+async fn is_tavern_socket(state: &State<'_, AppState>) -> bool {
     matches!(
         *state.current_lieu.lock().await,
-        Some(Lieu::Village(..))
+        Some(Lieu::Taverne(_))
     )
 }
 
-/// Tavern-only refusal error for village-socket sends.
+/// Tavern-only refusal error for non-tavern-socket sends.
 fn tavern_only_err(event: &str) -> String {
-    format!("{event} is tavern-only — blocked on village socket (changeSalon-only presence)")
+    format!("{event} is tavern-only — blocked on non-tavern socket (village/maison presence)")
+}
+
+/// `true` when the live single-socket connection is a maison presence.
+/// `maison_send` must refuse otherwise. `None` (never dialed / torn down)
+/// counts as non-maison.
+async fn is_maison_socket(state: &State<'_, AppState>) -> bool {
+    matches!(
+        *state.current_lieu.lock().await,
+        Some(Lieu::Maison(..))
+    )
+}
+
+/// Maison-only refusal error for non-maison-socket sends.
+fn maison_only_err(event: &str) -> String {
+    format!("{event} is maison-only — blocked on non-maison socket")
 }
 
 /// Build a `42["event", ...]` payload via [`socket_io`] and send it
@@ -62,8 +77,8 @@ pub async fn ws_connect(
     dial_with_discipline(&app, &state, Lieu::Taverne(id_lieu)).await
 }
 
-/// B1 dial discipline (shared tavern + village entry point; mirrors the
-/// official JS `_initialisationEnCours` but latest-wins instead of
+/// B1 dial discipline (shared tavern + village + maison entry point; mirrors
+/// the official JS `_initialisationEnCours` but latest-wins instead of
 /// swallow-all): never two sockets at once, never a swallowed cross-`Lieu`
 /// dial.
 ///
@@ -77,8 +92,8 @@ pub async fn ws_connect(
 /// The caller that claims `inflight` runs the whole chain; queued callers
 /// return `Ok(())` at once and learn the outcome via the lieu-tagged
 /// `ws-connected` event (`"Connected to the tavern"` / `"Connected to the
-/// village"`). `current_lieu` stays the presence authority; `ws_send` /
-/// `change_place` guards are untouched.
+/// village"` / `"Connected to the maison"`). `current_lieu` stays the
+/// presence authority; `ws_send` / `change_place` guards are untouched.
 pub(crate) async fn dial_with_discipline(
     app: &tauri::AppHandle,
     state: &State<'_, AppState>,
@@ -145,11 +160,11 @@ async fn is_superseded(state: &State<'_, AppState>, gen: u64) -> bool {
     dial.gen != gen || dial.pending.is_some()
 }
 
-/// Shared connect core for tavern + village presence (single-socket
-/// time-multiplexed): teardown of the old WS session, fresh-first portrait
-/// fetch with last-good cache fallback, then dial via
+/// Shared connect core for tavern + village + maison presence
+/// (single-socket time-multiplexed): teardown of the old WS session,
+/// fresh-first portrait fetch with last-good cache fallback, then dial via
 /// `socket::ws_connect_lieu`. The `Lieu` enum avoids forking this logic —
-/// `village_connect` reuses it directly. Single-flight + latest-wins queue
+/// `village_connect` / `maison_connect` reuse it directly. Single-flight + latest-wins queue
 /// live in `dial_with_discipline` (the only caller); `gen` is the generation
 /// captured at claim/chain time — when a newer target was queued mid-flight
 /// (`dial.gen != gen` or `pending` present) this attempt is stale: skip the
@@ -274,9 +289,10 @@ pub(crate) async fn ws_connect_inner(
 #[tauri::command]
 pub async fn ws_send(state: State<'_, AppState>, message: String) -> Result<(), String> {
     // Every `ws_send` branch emits a `taverne*` event (taverneMessage /
-    // Emote / Commande / Prive) — never valid on a village socket, where
-    // live captures show changeSalon-only presence.
-    if is_village_socket(&state).await {
+    // Emote / Commande / Prive) — never valid on a village or maison
+    // socket, where live captures show changeSalon-only presence (village)
+    // / `maisonMessage` presence (maison).
+    if !is_tavern_socket(&state).await {
         return Err(tavern_only_err("ws_send(taverneMessage/Emote/Commande)"));
     }
     if message.len() > config::MSG_MAX_LEN {
@@ -343,8 +359,9 @@ pub async fn teardown_session(state: &State<'_, AppState>, app: &tauri::AppHandl
         // `s` dropped here: token/jar/client released.
     }
     drop(session);
-    // Presence target cleared with the session: a stale `Village` must not
-    // block the next tavern dial's commands (each `ws_connect_lieu` sets it).
+    // Presence target cleared with the session: a stale `Village`/`Maison`
+    // must not block the next tavern dial's commands (each
+    // `ws_connect_lieu` sets it).
     *state.current_lieu.lock().await = None;
     // B1: stale any in-flight dial attempt (its commit/emit guards check
     // this generation) so a slow handshake finishing after a voluntary
@@ -369,10 +386,10 @@ pub async fn change_place(state: State<'_, AppState>, id_place: u64) -> Result<(
             .as_ref()
             .ok_or_else(|| AppError::NotConnected.to_string())?;
     }
-    // `taverneChangePlace` on a village socket is the exact contamination
-    // seen in logs (42["taverneChangePlace",1] after a 326 changeSalon):
-    // live village sockets never send `taverne*`.
-    if is_village_socket(&state).await {
+    // `taverneChangePlace` on a village/maison socket is the exact
+    // contamination seen in logs (42["taverneChangePlace",1] after a 326
+    // changeSalon): live non-tavern sockets never send `taverne*`.
+    if !is_tavern_socket(&state).await {
         return Err(tavern_only_err("taverneChangePlace"));
     }
     if id_place > config::PLACE_MAX {
@@ -384,13 +401,24 @@ pub async fn change_place(state: State<'_, AppState>, id_place: u64) -> Result<(
     send_payload(&state, payload).await
 }
 
+/// Refuse a `taverne*` send unless the live socket is a tavern presence
+/// (village + maison sockets get the tavern-only error).
+async fn require_tavern_socket(state: &State<'_, AppState>, event: &str) -> Result<(), String> {
+    if !is_tavern_socket(state).await {
+        return Err(tavern_only_err(event));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn taverne_offre_verre(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    require_tavern_socket(&state, "taverneOffreVerre").await?;
     send_event(&state, "taverneOffreVerre", &[json!(login)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_tournee_generale(state: State<'_, AppState>) -> Result<(), String> {
+    require_tavern_socket(&state, "taverneTourneeGenerale").await?;
     send_event(&state, "taverneTourneeGenerale", &[]).await
 }
 
@@ -399,20 +427,49 @@ pub async fn taverne_accepte_alcool(
     state: State<'_, AppState>,
     accepter: bool,
 ) -> Result<(), String> {
+    require_tavern_socket(&state, "taverneAccepteAlcool").await?;
     send_event(&state, "taverneAccepteAlcool", &[json!(accepter)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_kick(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    require_tavern_socket(&state, "taverneKick").await?;
     send_event(&state, "taverneKick", &[json!(login)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_ban(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    require_tavern_socket(&state, "taverneBan").await?;
     send_event(&state, "taverneBan", &[json!(login)]).await
 }
 
 #[tauri::command]
 pub async fn taverne_unban(state: State<'_, AppState>, login: String) -> Result<(), String> {
+    require_tavern_socket(&state, "taverneUnban").await?;
     send_event(&state, "taverneUnban", &[json!(login)]).await
+}
+
+/// Maison chat send: `42["maisonMessage",type,message]` per live capture.
+/// Maison-only — refuses on tavern/village sockets (and when never dialed).
+/// An empty `msg_type` defaults to `"parler"`. Maison displacement
+/// (`maisonDeplacement` / `maisonRefreshPosition`) is out of scope.
+#[tauri::command]
+pub async fn maison_send(
+    state: State<'_, AppState>,
+    msg_type: String,
+    message: String,
+) -> Result<(), String> {
+    if !is_maison_socket(&state).await {
+        return Err(maison_only_err("maisonMessage"));
+    }
+    if message.len() > config::MSG_MAX_LEN {
+        return Err(AppError::MessageTooLong(config::MSG_MAX_LEN).to_string());
+    }
+    let typ = if msg_type.is_empty() {
+        "parler".to_string()
+    } else {
+        msg_type
+    };
+    let payload = socket_io("maisonMessage", &[json!(typ), json!(message)]);
+    send_payload(&state, payload).await
 }

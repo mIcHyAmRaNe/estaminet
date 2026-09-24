@@ -117,6 +117,10 @@ export interface TavernSelectProps {
   onBack: () => void;
   onForgetCurrent?: () => void;
   onCancel?: () => void;
+  // House entry (headless maison chat): owner-login input resolves via
+  // get_maison_id + maisonConnect in App, then the room phase reuses the
+  // room entry flagged as maison. Absent = no house entry offered.
+  onEnterHouse?: (ownerLogin: string) => Promise<void>;
   // Home-village presence only (display, never dials from here — App
   // auto-dials the player's own NomVillage once per tavern-phase entry).
   // villageName is the home village display name so the band shows even

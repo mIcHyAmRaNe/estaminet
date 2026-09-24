@@ -65,9 +65,11 @@ pub struct AppState {
     /// Presence target of the live single-socket WS connection.
     /// Set on every successful `socket::ws_connect_lieu` dial, cleared on
     /// voluntary teardown (`chat::teardown_session`, `auth::ws_disconnect`).
-    /// Tavern-only commands (`change_place`, `ws_send`) refuse to send when
-    /// this is `Village` — the live village socket only ever sends
-    /// `changeSalon` (+ engine.io ping), never `taverne*`.
+    /// Tavern-only commands (`change_place`, `ws_send`, `taverne_*`) refuse
+    /// to send when this is `Village` or `Maison` — the live village socket
+    /// only ever sends `changeSalon` (+ engine.io ping), never `taverne*`;
+    /// the maison socket sends `changeSalon` + `maisonMessage`.
+    /// `maison_send` requires `Maison`.
     pub current_lieu: Mutex<Option<crate::network::socket::Lieu>>,
     /// Single-flight guard against double-connect (mirrors the official
     /// JS `_initialisationEnCours`: ONE socket at a time).

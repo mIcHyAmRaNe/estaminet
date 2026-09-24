@@ -17,6 +17,11 @@ pub const URL_ZOOM_PERSONNAGE: &str =
     "https://www.renaissancekingdoms.com/ZoomPersonnage.php";
 pub const URL_ECRAN_PRINCIPAL: &str =
     "https://www.renaissancekingdoms.com/EcranPrincipal.php";
+/// AJAX variant of the main-screen endpoint (same host, `EcranPrincipalAjax.php`).
+/// Used as the house-visit fallback: same `?l=23&t=m&p=<login>` query and same
+/// Cookie/Referer pattern as the full-page fetch.
+pub const URL_ECRAN_PRINCIPAL_AJAX: &str =
+    "https://www.renaissancekingdoms.com/EcranPrincipalAjax.php";
 
 /// oxv images CDN root — mirror of MIDAS_CDN in src/lib/config.ts. The
 /// `fetch_portrait_asset` proxy only serves URLs under this prefix (SSRF guard).
