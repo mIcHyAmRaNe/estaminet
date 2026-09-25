@@ -18,6 +18,7 @@ pub fn run() {
             taverne::get_portrait_json,
             taverne::get_own_portrait_json,
             taverne::fetch_portrait_asset,
+            taverne::get_tavern_presences,
             auth::login,
             auth::try_auto_login,
             auth::try_auto_login_for,

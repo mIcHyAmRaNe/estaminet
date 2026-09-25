@@ -1274,8 +1274,11 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
       }
       if (isRoomRejectedPayload(payload) || !hadInit) {
         // Terminal: no auto-retry, presence reset like a drop (history kept).
-        // The message persists until the next ws-connected / Enter / manual
-        // retryTavern() (no TTL — this is final, not transient).
+        // Surfaced as a floating auto-dismiss toast in the picker (same
+        // transient TTL as other errors): the message self-clears after
+        // display so the toast never sticks and never blocks later status
+        // toasts. errorKind stays set for retry logic; the next ws-connected
+        // / Enter / retryTavern() clears both.
         setIsConnected(false);
         isConnectedRef.current = false;
         taverneInitSeenRef.current = false;
@@ -1283,6 +1286,7 @@ export function useTaverne(username: string, idLieu: number, tavernPlaces?: numb
         resetPresence();
         setError(roomRejectedMessage());
         setErrorKind("room-rejected");
+        setTimeout(() => setError(""), ERROR_TTL_MS);
         return;
       }
       const attempted = lastPlaceRef.current;

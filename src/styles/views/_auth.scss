@@ -1885,4 +1885,320 @@ label.tavern-filter-option {
   .village-presence.is-loading .village-dot {
     animation: none;
   }
+  .tavern-presence-skel-line,
+  .tavern-presence-refresh.is-spinning svg {
+    animation: none;
+  }
+}
+
+/* ── Tavern picker two-column layout + presence side panel ──
+    Left = the existing picker (recents / village band / carousel /
+    custom entries / Enter / footer), right = who is present per tavern.
+    Same quiet band language as .village-presence: slate surface, green
+    dot head, muted fallbacks. Below 900px the panel stacks under the
+    picker so nothing squeezes. */
+.tavern-select--with-presence {
+  max-width: 1060px;
+}
+
+.tavern-select-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-5);
+  align-items: stretch;
+}
+
+.tavern-select-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+  min-height: 0;
+}
+
+.tavern-select-aside {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+.tavern-presence-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.tavern-presence-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tavern-presence-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+
+.tavern-presence-dot.is-on {
+  background: var(--success);
+  opacity: 1;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--success) 18%, transparent);
+}
+
+.tavern-presence-panel[aria-busy="true"] .tavern-presence-dot {
+  animation: village-pulse 1.2s ease-in-out infinite;
+}
+
+.tavern-presence-panel-title {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+/* Header total badge: compact "(n)" pill — mono type on a subtle
+   surface, never a sentence. */
+.tavern-presence-panel-count {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 1px 8px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.tavern-presence-panel-count {
+  margin-left: auto;
+}
+
+/* Header manual refresh: icon-only button pinned to the head's right edge.
+   Same quiet recipe as .village-retry (28px bordered chip, same tokens);
+   when the count badge shows, it yields the push and sits glued next to it.
+   The title keeps its ellipsis — only the two trailing chips are fixed. */
+.tavern-presence-refresh {
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--surface-hover);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--warning, var(--text-secondary));
+    outline-offset: 2px;
+  }
+
+  &.is-spinning svg {
+    animation: about-spin 0.9s linear infinite;
+  }
+}
+
+.tavern-presence-panel-count + .tavern-presence-refresh {
+  margin-left: 0;
+}
+
+.tavern-presence-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.tavern-presence-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+
+  &:first-child {
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+/* Block title row: the tavern name alone (the panel head already says
+   where) — single line with ellipsis, full name on hover via title. */
+.tavern-presence-block-title {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tavern-presence-block-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Occupant roster: plain markdown-like bullets — real disc markers, muted
+   text, one login per line. Block layout (not flex) so the outside markers
+   survive; the list keeps its own left gutter for them. */
+.tavern-presence-list {
+  margin: 0;
+  padding: 0 0 0 1.4em;
+  list-style: disc;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.tavern-presence-name {
+  padding: 1px 0;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tavern-presence-empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.tavern-presence-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--warning, var(--text-secondary));
+}
+
+.tavern-presence-error-text {
+  min-width: 0;
+}
+
+.tavern-presence-retry {
+  align-self: flex-start;
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: var(--primary);
+    background: var(--primary-muted);
+  }
+}
+
+.tavern-presence-retry--inline {
+  padding: 2px 10px;
+  font-size: var(--text-xs);
+}
+
+.tavern-presence-stale {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tavern-presence-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.tavern-presence-skel-line {
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-hover) 25%,
+    color-mix(in oklab, var(--surface-hover) 55%, var(--text-muted)) 50%,
+    var(--surface-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: tavern-presence-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes tavern-presence-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .tavern-select--with-presence {
+    max-width: 720px;
+  }
+
+  .tavern-select-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tavern-presence-panel {
+    height: auto;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .tavern-presence-blocks {
+    overflow: visible;
+  }
 }

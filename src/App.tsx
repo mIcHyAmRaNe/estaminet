@@ -644,6 +644,7 @@ export default function App() {
             loading={connecting}
             error={taverne.error}
             status={taverne.status}
+            tavernErrorKind={taverne.errorKind}
             onEnter={handleEnterTavern}
             onBack={handleBackToAuth}
             onForgetCurrent={handleForgetCurrent}

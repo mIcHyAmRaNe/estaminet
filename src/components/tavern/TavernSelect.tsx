@@ -3,6 +3,7 @@ import { useStatusToast } from "../../lib/hooks/useStatusToast";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import TavernCarousel from "./TavernCarousel";
 import RecentTaverns from "./RecentTaverns";
+import TavernPresencePanel from "./TavernPresencePanel";
 import { ArrowEnterLeft, ArrowClockwise } from "../../lib/utils/icons";
 import { t } from "../../lib/i18n";
 import type { TavernSelectProps } from "../../lib/types";
@@ -80,7 +81,11 @@ function VillagePresence(props: {
 }
 
 export default function TavernSelect(props: TavernSelectProps) {
-  const { showStatus, toastLeaving } = useStatusToast(props.status, props.error);
+  const { showStatus, toastLeaving, showRoomRejected, roomRejectedLeaving } = useStatusToast(
+    props.status,
+    props.error,
+    props.tavernErrorKind ?? null,
+  );
   const [customValue, setCustomValue] = useState("");
   const [customError, setCustomError] = useState("");
   // House entry: same <details> pattern as the custom tavern above, but the
@@ -144,7 +149,7 @@ export default function TavernSelect(props: TavernSelectProps) {
   };
 
   return (
-    <div class="auth-form auth-form--wide tavern-select">
+    <div class="auth-form auth-form--wide tavern-select tavern-select--with-presence">
         <div class="auth-head">
           <div class="auth-head-row">
             {props.username && (
@@ -160,11 +165,20 @@ export default function TavernSelect(props: TavernSelectProps) {
           </div>
         </div>
 
-        {props.error && <div class="auth-error" role="alert">{props.error}</div>}
+        {/* `room-rejected` never renders sticky: it surfaces as a floating
+            auto-dismiss toast below (same .auth-status timing/presentation
+            as status toasts). All other errors keep the persistent inline
+            row. */}
+        {props.error && props.tavernErrorKind !== "room-rejected" && <div class="auth-error" role="alert">{props.error}</div>}
         {showStatus && (
           <div class={`auth-status${toastLeaving ? " is-leaving" : ""}`}>{props.status}</div>
         )}
+        {showRoomRejected && (
+          <div class={`auth-status${roomRejectedLeaving ? " is-leaving" : ""}`} role="alert">{props.error}</div>
+        )}
 
+        <div class="tavern-select-layout">
+          <div class="tavern-select-main">
         <RecentTaverns
           tavernIds={props.recents}
           taverns={props.taverns}
@@ -338,6 +352,11 @@ export default function TavernSelect(props: TavernSelectProps) {
               {t("auth.forgetCurrent")}
             </button>
           ) : null}
+        </div>
+          </div>
+          <aside class="tavern-select-aside" aria-label="Présences dans les tavernes">
+            <TavernPresencePanel taverns={props.taverns} />
+          </aside>
         </div>
     </div>
   );

@@ -235,5 +235,13 @@ export const fr: Record<string, string> = {
   'maison.title': 'Maison de {name}',
   'retry.tavern': 'Se reconnecter à la taverne',
   'retry.village': 'Recharger le village',
+  // Tavern picker presence side panel (title, empty state, retry, errors).
+  'tavernPresence.title': 'Sont présents dans la taverne :',
+  'tavernPresence.ariaLabel': 'Présences dans les tavernes',
+  'tavernPresence.empty': 'Personne pour le moment — les tavernes sont calmes.',
+  'tavernPresence.retry': 'Réessayer',
+  'tavernPresence.refresh': 'Rafraîchir',
+  'tavernPresence.rosterFailed': 'Impossible de voir qui est présent pour le moment.',
+  'tavernPresence.refreshFailed': "La liste n'a pas pu être rafraîchie.",
   'app.title': 'Taverne des Royaumes',
 }

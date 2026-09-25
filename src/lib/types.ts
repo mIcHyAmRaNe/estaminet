@@ -113,6 +113,10 @@ export interface TavernSelectProps {
   loading: boolean;
   error: string;
   status: string;
+  // Distinct tavern connection error kind (hook-owned `errorKind`): gates
+  // the `room-rejected` floating toast — that kind never renders the sticky
+  // .auth-error. Absent = legacy sticky behavior for all errors.
+  tavernErrorKind?: "room-rejected" | "dropped" | null;
   onEnter: () => void;
   onBack: () => void;
   onForgetCurrent?: () => void;

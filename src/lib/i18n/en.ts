@@ -235,5 +235,13 @@ export const en: Record<string, string> = {
   'maison.title': "{name}'s house",
   'retry.tavern': 'Reconnect to the tavern',
   'retry.village': 'Reload the village',
+  // Tavern picker presence side panel (title, empty state, retry, errors).
+  'tavernPresence.title': 'People in the taverns:',
+  'tavernPresence.ariaLabel': 'Tavern presence',
+  'tavernPresence.empty': 'Nobody right now — the taverns are quiet.',
+  'tavernPresence.retry': 'Retry',
+  'tavernPresence.refresh': 'Refresh',
+  'tavernPresence.rosterFailed': 'Could not see who is here right now.',
+  'tavernPresence.refreshFailed': 'The list could not be refreshed.',
   'app.title': 'Tavern of the Kingdoms',
 }

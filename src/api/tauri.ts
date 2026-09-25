@@ -102,6 +102,15 @@ export const api = {
   // what other players see — never a divergent fetch.
   getOwnPortraitJson: () => invoke<string>("get_own_portrait_json"),
 
+  // Village tavern presences for the tavern-select right panel (authenticated
+  // EcranPrincipalAjax.php?l=5 village-view fetch, parsed per tavern).
+  // Rust counterpart: get_tavern_presences in src-tauri/src/commands/taverne.rs.
+  // Rust returns snake_case; mapped here to camelCase for UI callers.
+  getTavernPresences: () =>
+    invoke<Array<{ tavern_name: string; occupants: string[] }>>("get_tavern_presences").then((rows) =>
+      rows.map((r) => ({ tavernName: r.tavern_name, occupants: r.occupants })),
+    ),
+
   isConnected: () => invoke<boolean>("is_connected"),
 
 } as const;

@@ -485,4 +485,390 @@ pub async fn fetch_portrait_asset(
         .map_err(|e| e.to_string())
 }
 
+// ---------- village tavern presences (tavern-select right panel) ----------
+//
+// Authenticated fetch of the village view
+// (`EcranPrincipalAjax.php?l=5`) with the logged-in session (same
+// Cookie/Referer pattern as the maison fetch) and structured parse of the
+// `presentsTaverne` blocks:
+//
+// `<div class="illustrationImage presentsTaverne">...
+//  Pr&eacute;sents dans "TAVERN NAME":<br />
+//  <a class="lien_default lienPerso"
+//  onclick="...popupPerso('FichePersonnage.php?login=xxx')">Display</a> ...`
+//
+// One entry per quoted `Présents dans "…"` block (the village view carries
+// one block per tavern), each with 0..N person-link display names (only
+// `login=` anchors count, so decor links never leak in). No new
+// dependencies: careful string parsing with HTML-entity decoding for
+// `&eacute;` etc. An empty village view (or a layout change) resolves to
+// `Ok(vec![])` — never throws on parse-miss; `Err` only on `NotConnected` /
+// network failures.
+
+#[derive(Serialize)]
+pub struct TavernPresence {
+    pub tavern_name: String,
+    pub occupants: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn get_tavern_presences(
+    state: State<'_, AppState>,
+) -> Result<Vec<TavernPresence>, String> {
+    inner_get_tavern_presences(&state).await.map_err(String::from)
+}
+
+/// Session snapshot (client + jar) with one short retry on `NotConnected`.
+///
+/// Same tavern-phase race as the maison/village fetches: the tavern select
+/// calls this right after login and must not fail on a login-commit race.
+/// Mirrors `maison.rs::snapshot_session` (600ms single retry,
+/// `taverne-presence:` log prefix).
+async fn snapshot_session_for_presence(
+    state: &State<'_, AppState>,
+) -> Result<
+    (
+        wreq::Client,
+        std::sync::Arc<wreq::cookie::Jar>,
+    ),
+    AppError,
+> {
+    {
+        let guard = state.session.lock().await;
+        if let Some(sess) = guard.as_ref() {
+            return Ok((sess.client.clone(), sess.jar.clone()));
+        }
+    }
+    logs::log_warn("taverne-presence: no session on first try, retrying once after 600ms");
+    tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+    let guard = state.session.lock().await;
+    match guard.as_ref() {
+        Some(sess) => {
+            logs::log_info("taverne-presence: session ready on retry");
+            Ok((sess.client.clone(), sess.jar.clone()))
+        }
+        None => {
+            logs::log_error("taverne-presence: NotConnected after retry (no session — login first)");
+            Err(AppError::NotConnected)
+        }
+    }
+}
+
+async fn inner_get_tavern_presences(
+    state: &State<'_, AppState>,
+) -> Result<Vec<TavernPresence>, AppError> {
+    let (client, jar) = snapshot_session_for_presence(state).await?;
+
+    let cookie_header = extract_cookies(&jar);
+    if cookie_header.is_empty() {
+        logs::log_error("taverne-presence: no session cookie (login expired?)");
+        return Err(AppError::Network(
+            "taverne-presence: no session cookie (login expired?)".into(),
+        ));
+    }
+
+    // Village view: fixed `?l=5` query (the server resolves the village from
+    // the session — same as the village WS dial, which always returns the
+    // home roster regardless of IDLieu).
+    let url = format!("{}?l=5", config::URL_ECRAN_PRINCIPAL_AJAX);
+    logs::log_info(&format!("taverne-presence: GET {url}"));
+    let resp = client
+        .get(&url)
+        .header("Cookie", cookie_header)
+        .header("Referer", config::REFERER)
+        .send()
+        .await
+        .map_err(|e| {
+            let msg = format!("taverne-presence: request failed: {e}");
+            logs::log_error(&msg);
+            AppError::Network(msg)
+        })?;
+
+    if !resp.status().is_success() {
+        let msg = format!(
+            "taverne-presence: HTTP {} for EcranPrincipalAjax.php",
+            resp.status()
+        );
+        logs::log_error(&msg);
+        return Err(AppError::Network(msg));
+    }
+
+    let text = resp.text().await.map_err(|e| {
+        let msg = format!("taverne-presence: error reading EcranPrincipalAjax.php: {e}");
+        logs::log_error(&msg);
+        AppError::Network(msg)
+    })?;
+
+    let presences = extract_tavern_presences(&text);
+    if presences.is_empty() {
+        logs::log_warn(&format!(
+            "taverne-presence: parse-miss (page {} bytes, presentsTaverne={} sentsdans={})",
+            text.len(),
+            text.matches("presentsTaverne").count(),
+            text.to_ascii_lowercase().matches("sents dans").count(),
+        ));
+    } else {
+        let total: usize = presences.iter().map(|p| p.occupants.len()).sum();
+        logs::log_info(&format!(
+            "taverne-presence: {} tavern(s), {total} occupant(s)",
+            presences.len()
+        ));
+    }
+    Ok(presences)
+}
+
+/// Decode the HTML entities the village view serves (`&eacute;` for
+/// `Présents`, `&quot;` for the tavern-name quotes, `&amp;`-escaped
+/// doubles, numeric `&#...;` / `&#x...;` references). `&amp;` is decoded
+/// first so double-escaped `&amp;eacute;` also resolves. Unknown entities
+/// pass through untouched.
+fn decode_tavern_entities(s: &str) -> String {
+    let pre = s.replace("&amp;", "&");
+    if !pre.contains('&') {
+        return pre;
+    }
+    let mut out = String::with_capacity(pre.len());
+    let mut i = 0usize;
+    while i < pre.len() {
+        if pre.as_bytes()[i] != b'&' {
+            let ch = pre[i..].chars().next().unwrap_or('\0');
+            out.push(ch);
+            i += ch.len_utf8().max(1);
+            continue;
+        }
+        let rest = &pre[i..];
+        let Some(semi) = rest.find(';') else {
+            out.push('&');
+            i += 1;
+            continue;
+        };
+        // Bound the entity body so a stray `&` far from any `;` scans cheap.
+        if semi > 10 {
+            out.push('&');
+            i += 1;
+            continue;
+        }
+        let entity = &rest[..semi + 1];
+        if let Some(decoded) = decode_tavern_entity(entity) {
+            out.push_str(&decoded);
+            i += entity.len();
+        } else {
+            out.push('&');
+            i += 1;
+        }
+    }
+    out
+}
+
+/// Single HTML entity (`&...;`) to its decoded text. Numeric references
+/// decode via `char::from_u32` (decimal `&#233;` / hex `&#xE9;`, either `x`
+/// casing); named entities cover the French/Latin-1 range the game serves.
+/// `None` for unknown names / invalid codepoints (caller keeps the raw `&`).
+fn decode_tavern_entity(entity: &str) -> Option<String> {
+    if let Some(body) = entity
+        .strip_prefix("&#")
+        .and_then(|b| b.strip_suffix(';'))
+    {
+        let codepoint = if let Some(hex) = body
+            .strip_prefix('x')
+            .or_else(|| body.strip_prefix('X'))
+        {
+            u32::from_str_radix(hex, 16).ok()?
+        } else {
+            body.parse::<u32>().ok()?
+        };
+        return char::from_u32(codepoint).map(|c| c.to_string());
+    }
+    let decoded = match entity {
+        "&lt;" => "<",
+        "&gt;" => ">",
+        "&quot;" => "\"",
+        "&apos;" => "'",
+        "&nbsp;" => " ",
+        "&laquo;" => "«",
+        "&raquo;" => "»",
+        "&ldquo;" => "\u{201C}",
+        "&rdquo;" => "\u{201D}",
+        "&lsquo;" => "\u{2018}",
+        "&rsquo;" => "\u{2019}",
+        "&hellip;" => "…",
+        "&mdash;" => "—",
+        "&ndash;" => "–",
+        "&agrave;" => "à",
+        "&aacute;" => "á",
+        "&acirc;" => "â",
+        "&auml;" => "ä",
+        "&egrave;" => "è",
+        "&eacute;" => "é",
+        "&ecirc;" => "ê",
+        "&euml;" => "ë",
+        "&icirc;" => "î",
+        "&iuml;" => "ï",
+        "&ocirc;" => "ô",
+        "&ouml;" => "ö",
+        "&ugrave;" => "ù",
+        "&ucirc;" => "û",
+        "&uuml;" => "ü",
+        "&ccedil;" => "ç",
+        "&ntilde;" => "ñ",
+        "&oelig;" => "œ",
+        "&aelig;" => "æ",
+        "&szlig;" => "ß",
+        "&Agrave;" => "À",
+        "&Acirc;" => "Â",
+        "&Egrave;" => "È",
+        "&Eacute;" => "É",
+        "&Ecirc;" => "Ê",
+        "&Icirc;" => "Î",
+        "&Ocirc;" => "Ô",
+        "&Ugrave;" => "Ù",
+        "&Ucirc;" => "Û",
+        "&Ccedil;" => "Ç",
+        "&OElig;" => "Œ",
+        "&AElig;" => "Æ",
+        _ => return None,
+    };
+    Some(decoded.to_owned())
+}
+
+/// ASCII suffix of `Présents dans` / `présents dans` (the leading `P/p` is
+/// skipped so the scan is case-proof without Unicode lowercasing, which
+/// would break byte-index mapping). `to_ascii_lowercase` preserves byte
+/// length, so positions map 1:1 onto the decoded page.
+const PRESENCE_MARKER: &str = "sents dans";
+
+/// Split the decoded village view into one entry per quoted
+/// `Présents dans "…"` block. Title-only occurrences (`Sont présents dans
+/// la taverne :`, no quoted name) are skipped — they carry no tavern name.
+/// Blocks with a name but no person links yield an empty `occupants` vec
+/// (tavern shown as empty, not dropped).
+fn extract_tavern_presences(html: &str) -> Vec<TavernPresence> {
+    let decoded = decode_tavern_entities(html);
+    let lower = decoded.to_ascii_lowercase();
+    let mut markers: Vec<usize> = Vec::new();
+    let mut cursor = 0usize;
+    while cursor < lower.len() {
+        match lower[cursor..].find(PRESENCE_MARKER) {
+            Some(rel) => {
+                markers.push(cursor + rel);
+                cursor += rel + PRESENCE_MARKER.len();
+            }
+            None => break,
+        }
+    }
+    let mut out = Vec::new();
+    for (idx, &pos) in markers.iter().enumerate() {
+        let seg_end = markers.get(idx + 1).copied().unwrap_or(decoded.len());
+        let Some((name, links_from)) =
+            extract_presence_name(&decoded, pos + PRESENCE_MARKER.len(), seg_end)
+        else {
+            continue;
+        };
+        let occupants = extract_presence_occupants(&decoded, &lower, links_from, seg_end);
+        out.push(TavernPresence {
+            tavern_name: name,
+            occupants,
+        });
+    }
+    out
+}
+
+/// Tavern name right after a `Présents dans` marker: skip whitespace, expect
+/// an opening quote, capture to its strict pair. Strict pairing matters —
+/// names like `"L’etsicroxe de …"` contain a `’` that must not close a `"`
+/// opener. Returns the name plus the offset where person links start.
+/// `None` when no quoted name follows (title line).
+fn extract_presence_name(html: &str, from: usize, end: usize) -> Option<(String, usize)> {
+    let bytes = html.as_bytes();
+    let end = end.min(html.len());
+    let mut i = from.min(end);
+    while i < end && matches!(bytes[i], b' ' | b'\t' | b'\n' | b'\r') {
+        i += 1;
+    }
+    let rest = html.get(i..end)?;
+    let open = rest.chars().next()?;
+    let close: &[char] = match open {
+        '"' => &['"'],
+        '\'' => &['\''],
+        '\u{2018}' => &['\u{2019}'],
+        '\u{201C}' => &['\u{201D}'],
+        '«' => &['»'],
+        _ => return None,
+    };
+    let mut j = i + open.len_utf8();
+    let mut name_end = None;
+    while j < end {
+        let c = html[j..].chars().next()?;
+        if close.contains(&c) {
+            name_end = Some(j);
+            break;
+        }
+        j += c.len_utf8();
+    }
+    let name_end = name_end?;
+    let name = html[i + open.len_utf8()..name_end].trim().to_owned();
+    if name.is_empty() {
+        return None;
+    }
+    let close_len = html[name_end..].chars().next().map(|c| c.len_utf8()).unwrap_or(1);
+    Some((name, name_end + close_len))
+}
+
+/// Person links between `from` and `end`: `<a …>Display</a>` anchors whose
+/// tag carries a `login=` param (the `popupPerso('FichePersonnage.php?login=…')`
+/// person links). Inner markup is stripped, empty names dropped, exact
+/// duplicates kept once (order preserved).
+fn extract_presence_occupants(
+    html: &str,
+    lower: &str,
+    from: usize,
+    end: usize,
+) -> Vec<String> {
+    let mut occupants = Vec::new();
+    let mut cursor = from.min(end);
+    while cursor < end {
+        let Some(rel) = lower[cursor..end].find("<a") else {
+            break;
+        };
+        let tag_start = cursor + rel;
+        let Some(tag_rel) = html[tag_start..end].find('>') else {
+            break;
+        };
+        let tag_end = tag_start + tag_rel;
+        let is_person = lower[tag_start..tag_end].contains("login=");
+        let inner_from = tag_end + 1;
+        let Some(close_rel) = lower[inner_from..end].find("</a") else {
+            cursor = tag_end + 1;
+            continue;
+        };
+        let inner_end = inner_from + close_rel;
+        cursor = inner_end + "</a".len();
+        if !is_person {
+            continue;
+        }
+        let text = strip_tags(&html[inner_from..inner_end]).trim().to_owned();
+        if !text.is_empty() && !occupants.iter().any(|o| o == &text) {
+            occupants.push(text);
+        }
+    }
+    occupants
+}
+
+/// Strip inner `<…>` markup from an anchor's inner HTML (UTF-8 safe,
+/// char-based; `&lt;`-decoded text cannot contain `<` from real names in
+/// practice, and a stray `<` without `>` keeps the tail — display only).
+fn strip_tags(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut in_tag = false;
+    for c in s.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(c),
+            _ => {}
+        }
+    }
+    out
+}
+
 

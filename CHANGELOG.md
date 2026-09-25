@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.3] - 2026-09-25
+
+### Added
+- Tavern picker presence side-panel: backend `get_tavern_presences` (`TavernPresence` snapshot in `src-tauri/src/commands/taverne.rs`, exposed in `lib.rs`), frontend `TavernPresencePanel` + `useTavernPresences` hook, `api.getTavernPresences` wrapper, `tavernPresence.*` i18n (en/fr), `TavernSelect` with-presence layout + styles (`_auth.scss`).
+- `src-tauri/Cargo.lock` synced to release version.
+
+### Fixed
+- `room-rejected` is now a floating auto-dismiss toast (no sticky inline error): `useStatusToast` (`showRoomRejected` / `roomRejectedLeaving`, `blockingError` gate), `TavernSelect` suppresses inline `.auth-error` for `room-rejected`, `useTaverne` terminal TTL, `tavernErrorKind` plumbed via `App.tsx` + `types.ts`.
+
 ## [0.6.2] - 2026-09-24
 
 ### Fixed
